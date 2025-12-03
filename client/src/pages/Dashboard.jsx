@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Chart from 'chart.js/auto'
 
 export default function Dashboard() {
@@ -123,10 +124,10 @@ export default function Dashboard() {
               <i className="fa-solid fa-grid-2 w-5 text-center"></i>
               <span>Dashboard</span>
             </a>
-            <a href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white">
+            <Link to="/addnewexpense" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white">
               <i className="fa-solid fa-clock-rotate-left w-5 text-center"></i>
               <span>Transactions</span>
-            </a>
+            </Link>
             <a href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white">
               <i className="fa-regular fa-credit-card w-5 text-center"></i>
               <span>Payments</span>
