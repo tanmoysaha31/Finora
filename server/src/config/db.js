@@ -1,15 +1,12 @@
-import mongoose from 'mongoose'
+const mongoose = require('mongoose');
 
-export const connectDB = async () => {
-  const uri = process.env.MONGODB_URI
-  if (!uri) {
-    console.warn('MONGODB_URI not set, skipping DB connection')
-    return
-  }
-  try {
-    await mongoose.connect(uri, { autoIndex: true })
-    console.log('MongoDB connected')
-  } catch (err) {
-    console.error('MongoDB connection error')
-  }
-}
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://mansuruntsarah_db_user:ABdureJm7Xscw4Li@ac-qiqgjwz-shard-00-00.wpyijvp.mongodb.net:27017,ac-qiqgjwz-shard-00-01.wpyijvp.mongodb.net:27017,ac-qiqgjwz-shard-00-02.wpyijvp.mongodb.net:27017/Jaiga?ssl=true&replicaSet=atlas-qapf2c-shard-0&authSource=admin&retryWrites=true&w=majority';
+
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+module.exports = mongoose;
