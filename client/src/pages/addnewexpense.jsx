@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CreditCard, 
   Calendar, 
@@ -101,6 +102,7 @@ const NavItem = ({ icon: Icon, label, active, onClick }) => (
 export default function App() {
   const [activeTab, setActiveTab] = useState('add-expense');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   // --- STATE MANAGEMENT (MERN READY) ---
   const [formData, setFormData] = useState({
@@ -189,7 +191,7 @@ export default function App() {
           </div>
 
           <div className="space-y-2 flex-1">
-            <NavItem icon={Home} label="Dashboard" onClick={() => setActiveTab('dashboard')} />
+            <NavItem icon={Home} label="Dashboard" onClick={() => navigate('/dashboard')} />
             <NavItem icon={PieChart} label="Transactions" onClick={() => setActiveTab('transactions')} />
             <NavItem icon={Wallet} label="My Cards" onClick={() => setActiveTab('cards')} />
             <div className="pt-4 pb-2">
