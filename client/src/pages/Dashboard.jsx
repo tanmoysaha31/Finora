@@ -5,6 +5,7 @@ import Chart from 'chart.js/auto'
 export default function Dashboard() {
   const chartRef = useRef(null)
   const [data, setData] = useState(null)
+  const [transactions, setTransactions] = useState([])
   const [search, setSearch] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [chartReady, setChartReady] = useState(false)
@@ -25,34 +26,31 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    const mock = {
-      user: { username: 'Tanmoy Saha', plan: 'Premium Plan', avatar: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png', totalBalance: 124592.5 },
-      chartData: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], income: [100, 260, 290, 280, 330, 400, 380], expense: [120, 70, 170, 290, 100, 150, 210] },
-      goals: [
-        { id: 1, title: 'PlayStation 5', current: 350, target: 500, items: 'Console & Game', icon: 'fa-gamepad', bg: 'bg-indigo-600' },
-        { id: 2, title: 'Home Renovation', current: 8500, target: 15000, items: 'Roof & Paint', icon: 'fa-paint-roller', bg: 'bg-emerald-600' },
-        { id: 3, title: 'Japan Trip', current: 2500, target: 5000, items: 'Flight & Hotel', icon: 'fa-plane', bg: 'bg-rose-600' },
-        { id: 4, title: 'New MacBook', current: 1200, target: 2500, items: 'Macbook Pro M3 Max', icon: 'fa-laptop', bg: 'bg-gray-700' }
-      ],
-      transactions: [
-        { id: 't1', title: 'Apple Store', category: 'Tech', amount: -999.0, date: '2023-10-26' },
-        { id: 't2', title: 'Upwork Earnings', category: 'Salary', amount: 2450.0, date: '2023-10-25' },
-        { id: 't3', title: 'Starbucks', category: 'Food', amount: -15.5, date: '2023-10-25' },
-        { id: 't4', title: 'Uber Ride', category: 'Transport', amount: -24.0, date: '2023-10-24' },
-        { id: 't5', title: 'Netflix Sub', category: 'Entertainment', amount: -19.99, date: '2023-10-23' },
-        { id: 't6', title: 'Whole Foods', category: 'Shopping', amount: -142.8, date: '2023-10-22' },
-        { id: 't7', title: 'Electric Bill', category: 'Utility', amount: -85.0, date: '2023-10-20' }
-      ],
-      contacts: [
-        { id: 'c1', name: 'Mom', avatarType: 'icon', icon: 'fa-solid fa-user', avatar: 'https://cdn-icons-png.flaticon.com/512/6997/6997662.png' },
-        { id: 'c2', name: 'Rent', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png' },
-        { id: 'c3', name: 'Groceries', avatar: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png' },
-        { id: 'c4', name: 'Coffee', avatar: 'https://cdn-icons-png.flaticon.com/512/590/590836.png' },
-        { id: 'c5', name: 'Anna', avatar: null }
-      ]
-    }
-    setData(mock)
+    const token = localStorage.getItem('token')
+    const headers = token ? { Authorization: 'Bearer ' + token } : {}
+    Promise.all([
+      fetch(`${API}/api/transactions/summary`, { headers }),
+      fetch(`${API}/api/transactions`, { headers }),
+    ]).then(async ([s, t]) => {
+      const sd = await s.json()
+      const td = await t.json()
+      const chartData = { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'], income: [100,260,290,280,330,400,380], expense: [120,70,170,290,100,150,210] }
+      const user = { username: 'User', plan: 'Premium Plan', avatar: null, totalBalance: sd?.totalBalance || 0 }
+      const contacts = []
+      setData({ user, chartData, goals: [], transactions: td?.items || [], contacts })
+      setTransactions(td?.items || [])
+    }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const headers = token ? { Authorization: 'Bearer ' + token } : {}
+    const q = encodeURIComponent(search)
+    fetch(`${API}/api/transactions${q ? `?q=${q}` : ''}`, { headers })
+      .then(r => r.json())
+      .then(d => setTransactions(d?.items || []))
+      .catch(() => {})
+  }, [search])
 
   useEffect(() => {
     if (!data) return
@@ -263,10 +261,7 @@ export default function Dashboard() {
                     <button className="text-xs text-purple-400 font-medium">View All</button>
                   </div>
                   <div className="space-y-1.5 overflow-y-auto pr-2 flex-1 min-h-0 max-h-[420px] scrollbar-hide">
-                    {((data?.transactions || []).filter(t => {
-                      const q = search.toLowerCase()
-                      return !q || t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)
-                    })).map((tx, index) => {
+                    {(transactions || []).map((tx, index) => {
                       const icon = getIconForCategory(tx.category)
                       const isPositive = tx.amount > 0
                       return (
@@ -288,7 +283,7 @@ export default function Dashboard() {
                               </button>
                             </div>
                           </div>
-                          {index !== (data.transactions.length - 1) ? <div className="h-[1px] bg-white/5 w-[90%] mx-auto my-0.5"></div> : null}
+                          {index !== (transactions.length - 1) ? <div className="h-[1px] bg-white/5 w-[90%] mx-auto my-0.5"></div> : null}
                         </div>
                       )
                     })}
@@ -335,3 +330,4 @@ export default function Dashboard() {
     </div>
   )
 }
+  const API = (import.meta.env?.VITE_API_URL) || 'http://localhost:5001'

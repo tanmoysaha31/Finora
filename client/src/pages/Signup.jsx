@@ -24,13 +24,15 @@ export default function Signup() {
     }
     setLoading(true)
     try {
-      const r = await fetch('/api/auth/signup', {
+      const ID = (email.split('@')[0] || 'user') + '_' + Date.now()
+      const r = await fetch(`${API}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullname, email, password })
+        body: JSON.stringify({ name: fullname, email, password, ID, isClient: true })
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d?.error || 'Signup failed')
+      if (d?.token) localStorage.setItem('token', d.token)
       navigate('/dashboard')
     } catch (err) {
       alert(err.message)
@@ -120,3 +122,4 @@ export default function Signup() {
     </div>
   )
 }
+  const API = (import.meta.env?.VITE_API_URL) || 'http://localhost:5001'

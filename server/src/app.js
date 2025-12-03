@@ -4,8 +4,9 @@ import { fileURLToPath } from 'url'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
-import authRouter from './routes/auth.js'
-import { errorHandler } from './middlewares/error.js'
+import authRouter from '../routes/authRouter.js'
+import { errorHandler } from '../middlewares/error.js'
+import transactionRouter from '../routes/transactionRouter.js'
 
 dotenv.config()
 const app = express()
@@ -18,6 +19,7 @@ const __dirname = path.dirname(__filename)
 connectDB()
 
 app.use('/api/auth', authRouter)
+app.use('/api/transactions', transactionRouter)
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')

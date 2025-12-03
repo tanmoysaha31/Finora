@@ -145,29 +145,28 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // ---------------------------------------------------------
-    // MERN STACK IMPLEMENTATION NOTE:
-    // This is where you would make your Axios/Fetch call.
-    // ---------------------------------------------------------
-    // try {
-    //   const response = await axios.post('/api/expenses/add', formData, {
-    //     headers: { Authorization: `Bearer ${token}` }
-    //   });
-    //   if (response.data.success) { ... }
-    // } catch (err) { ... }
-    
-    // Simulating API delay for UI demonstration
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowSuccess(true);
-      
-      // Reset after success animation
+    try {
+      const token = localStorage.getItem('token')
+      const cat = (CATEGORIES.find(c => c.id === formData.category)?.name) || 'Others'
+      const amt = -Math.abs(parseFloat(String(formData.amount || '0')))
+      const body = { title: formData.title, category: cat, amount: amt, date: formData.date, note: formData.note }
+      const r = await fetch(`${API}/api/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token ? 'Bearer ' + token : '' },
+        body: JSON.stringify(body),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || 'Failed to add expense')
+      setIsSubmitting(false)
+      setShowSuccess(true)
       setTimeout(() => {
-        setShowSuccess(false);
-        setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }));
-      }, 2000);
-    }, 1500);
+        setShowSuccess(false)
+        setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }))
+      }, 2000)
+    } catch (err) {
+      setIsSubmitting(false)
+      alert(err.message)
+    }
   };
 
   return (
@@ -577,3 +576,4 @@ export default function App() {
     </div>
   );
 }
+  const API = (import.meta.env?.VITE_API_URL) || 'http://localhost:5001'
