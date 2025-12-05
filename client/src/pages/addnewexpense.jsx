@@ -116,6 +116,7 @@ export default function App() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {
@@ -145,29 +146,37 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // ---------------------------------------------------------
-    // MERN STACK IMPLEMENTATION NOTE:
-    // This is where you would make your Axios/Fetch call.
-    // ---------------------------------------------------------
-    // try {
-    //   const response = await axios.post('/api/expenses/add', formData, {
-    //     headers: { Authorization: `Bearer ${token}` }
-    //   });
-    //   if (response.data.success) { ... }
-    // } catch (err) { ... }
-    
-    // Simulating API delay for UI demonstration
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowSuccess(true);
-      
-      // Reset after success animation
+    try {
+      if (!formData.title || !formData.amount) {
+        setErrorMsg('Please enter a title and amount');
+        setIsSubmitting(false);
+        return;
+      }
+      const r = await fetch('http://localhost:5000/api/expenses/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: (()=>{ try { return localStorage.getItem('finora_user_id') } catch(_) { return null } })(),
+          title: formData.title,
+          amount: Number(formData.amount || 0),
+          date: formData.date,
+          category: formData.category || 'Others',
+          paymentMethod: formData.paymentMethod,
+          note: formData.note
+        })
+      })
+      const d = await r.json()
+      if (!r.ok || !d?.success) throw new Error(d?.error || 'Failed to add expense')
+      setShowSuccess(true)
       setTimeout(() => {
-        setShowSuccess(false);
-        setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }));
-      }, 2000);
-    }, 1500);
+        setShowSuccess(false)
+        setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }))
+      }, 2000)
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to add expense')
+    } finally {
+      setIsSubmitting(false)
+    }
   };
 
   return (
@@ -304,6 +313,7 @@ export default function App() {
                           onChange={handleInputChange}
                           placeholder="0.00"
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-3xl font-bold text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
+                          required
                         />
                       </div>
                     </div>
@@ -322,6 +332,7 @@ export default function App() {
                           onChange={handleInputChange}
                           placeholder="Eg: Hangout at Chillox"
                           className="w-full h-[74px] pl-12 pr-4 rounded-2xl bg-black/20 border border-white/5 text-lg text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition-all"
+                          required
                         />
                       </div>
                     </div>
@@ -406,8 +417,13 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. Submit Action */}
+                    {/* 5. Submit Action */}
                 <div className="pt-4 animate-slide-up" style={{ animationDelay: '0.5s' }}>
+                  {errorMsg && (
+                    <div className="mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                      {errorMsg}
+                    </div>
+                  )}
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}

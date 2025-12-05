@@ -5,6 +5,8 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
 import authRouter from './routes/auth.js'
+import dashboardRouter from './routes/dashboard.js'
+import expensesRouter from './routes/expenses.js'
 import { errorHandler } from './middlewares/error.js'
 
 dotenv.config()
@@ -18,6 +20,8 @@ const __dirname = path.dirname(__filename)
 connectDB()
 
 app.use('/api/auth', authRouter)
+app.use('/api/dashboard', dashboardRouter)
+app.use('/api/expenses', expensesRouter)
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')

@@ -24,13 +24,16 @@ export default function Signup() {
     }
     setLoading(true)
     try {
-      const r = await fetch('/api/auth/signup', {
+      const r = await fetch('http://localhost:5000/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullname, email, password })
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d?.error || 'Signup failed')
+      if (d?.id) {
+        try { localStorage.setItem('finora_user_id', d.id) } catch (_) {}
+      }
       navigate('/dashboard')
     } catch (err) {
       alert(err.message)

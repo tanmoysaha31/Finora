@@ -25,33 +25,19 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    const mock = {
-      user: { username: 'Tanmoy Saha', plan: 'Premium Plan', avatar: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png', totalBalance: 124592.5 },
-      chartData: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'], income: [100, 260, 290, 280, 330, 400, 380], expense: [120, 70, 170, 290, 100, 150, 210] },
-      goals: [
-        { id: 1, title: 'PlayStation 5', current: 350, target: 500, items: 'Console & Game', icon: 'fa-gamepad', bg: 'bg-indigo-600' },
-        { id: 2, title: 'Home Renovation', current: 8500, target: 15000, items: 'Roof & Paint', icon: 'fa-paint-roller', bg: 'bg-emerald-600' },
-        { id: 3, title: 'Japan Trip', current: 2500, target: 5000, items: 'Flight & Hotel', icon: 'fa-plane', bg: 'bg-rose-600' },
-        { id: 4, title: 'New MacBook', current: 1200, target: 2500, items: 'Macbook Pro M3 Max', icon: 'fa-laptop', bg: 'bg-gray-700' }
-      ],
-      transactions: [
-        { id: 't1', title: 'Apple Store', category: 'Tech', amount: -999.0, date: '2023-10-26' },
-        { id: 't2', title: 'Upwork Earnings', category: 'Salary', amount: 2450.0, date: '2023-10-25' },
-        { id: 't3', title: 'Starbucks', category: 'Food', amount: -15.5, date: '2023-10-25' },
-        { id: 't4', title: 'Uber Ride', category: 'Transport', amount: -24.0, date: '2023-10-24' },
-        { id: 't5', title: 'Netflix Sub', category: 'Entertainment', amount: -19.99, date: '2023-10-23' },
-        { id: 't6', title: 'Whole Foods', category: 'Shopping', amount: -142.8, date: '2023-10-22' },
-        { id: 't7', title: 'Electric Bill', category: 'Utility', amount: -85.0, date: '2023-10-20' }
-      ],
-      contacts: [
-        { id: 'c1', name: 'Mom', avatarType: 'icon', icon: 'fa-solid fa-user', avatar: 'https://cdn-icons-png.flaticon.com/512/6997/6997662.png' },
-        { id: 'c2', name: 'Rent', avatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png' },
-        { id: 'c3', name: 'Groceries', avatar: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png' },
-        { id: 'c4', name: 'Coffee', avatar: 'https://cdn-icons-png.flaticon.com/512/590/590836.png' },
-        { id: 'c5', name: 'Anna', avatar: null }
-      ]
+    const fetchDashboard = async () => {
+      try {
+        const uid = (()=>{ try { return localStorage.getItem('finora_user_id') } catch(_) { return null } })()
+        const url = uid ? `http://localhost:5000/api/dashboard?userId=${uid}` : 'http://localhost:5000/api/dashboard'
+        const r = await fetch(url)
+        const d = await r.json()
+        if (!r.ok || !d?.user) throw new Error(d?.error || 'Failed to load dashboard')
+        setData(d)
+      } catch (_) {
+        setData({ user: { username: 'Guest', plan: 'Free', avatar: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png', totalBalance: 0 }, chartData: { labels: [], income: [], expense: [] }, goals: [], transactions: [], contacts: [] })
+      }
     }
-    setData(mock)
+    fetchDashboard()
   }, [])
 
   useEffect(() => {
