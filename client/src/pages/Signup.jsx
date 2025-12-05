@@ -10,11 +10,14 @@ export default function Signup() {
   const [showPwd, setShowPwd] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [pwdError, setPwdError] = useState('')
 
   const onSubmit = async (e) => {
     e.preventDefault()
-    if (password !== confirm) {
-      alert('Passwords do not match!')
+    const p1 = (password || '').trim()
+    const p2 = (confirm || '').trim()
+    if (p1 !== p2) {
+      setPwdError('Passwords do not match')
       return
     }
     const isDummy = email === 'demo@finora.com' && password === 'demo123'
@@ -80,7 +83,7 @@ export default function Signup() {
                     <div>
                       <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                       <div className="relative">
-                        <input id="password" type={showPwd? 'text':'password'} placeholder="**********" className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200" value={password} onChange={e=>setPassword(e.target.value)} required />
+                        <input id="password" type={showPwd? 'text':'password'} placeholder="**********" className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200" value={password} onChange={e=>{ const v=e.target.value; setPassword(v); const p2=(confirm||'').trim(); const p1=(v||'').trim(); setPwdError(p1 && p2 && p1!==p2 ? 'Passwords do not match':'' ) }} required />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={()=>setShowPwd(s=>!s)}>
                           {showPwd? 'Hide':'Show'}
                         </button>
@@ -89,11 +92,12 @@ export default function Signup() {
                     <div>
                       <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
                       <div className="relative">
-                        <input id="confirm" type={showConfirm? 'text':'password'} placeholder="**********" className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200" value={confirm} onChange={e=>setConfirm(e.target.value)} required />
+                        <input id="confirm" type={showConfirm? 'text':'password'} placeholder="**********" className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200" value={confirm} onChange={e=>{ const v=e.target.value; setConfirm(v); const p1=(password||'').trim(); const p2=(v||'').trim(); setPwdError(p1 && p2 && p1!==p2 ? 'Passwords do not match':'' ) }} required />
                         <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={()=>setShowConfirm(s=>!s)}>
                           {showConfirm? 'Hide':'Show'}
                         </button>
                       </div>
+                      {pwdError ? (<p className="text-red-600 text-xs mt-1">{pwdError}</p>) : null}
                     </div>
                   </div>
                   <button type="submit" disabled={loading} className="w-full bg-[#3f0d6e] hover:bg-[#2e0952] text-white font-medium py-3 rounded-full shadow-lg mt-4 disabled:opacity-60">

@@ -18,4 +18,19 @@ router.post('/signup', async (req, res, next) => {
   }
 })
 
+router.post('/login', async (req, res, next) => {
+  try {
+    const { email, username, password } = req.body || {}
+    const identifier = (email || username || '').toLowerCase()
+    if (!identifier || !password) return res.status(400).json({ message: 'Missing credentials' })
+    const user = await User.findOne({ email: identifier })
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' })
+    const ok = await bcrypt.compare(password, user.password)
+    if (!ok) return res.status(401).json({ message: 'Invalid credentials' })
+    return res.json({ id: user._id, fullname: user.fullname, email: user.email, token: 'ok' })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router
