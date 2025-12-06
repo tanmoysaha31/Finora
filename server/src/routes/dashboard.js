@@ -27,11 +27,21 @@ router.get('/', async (req, res, next) => {
     }
     if (!user) return res.status(404).json({ error: 'User not found' })
 
-    const [transactions, goals, contacts] = await Promise.all([
+    let [transactions, goals, contacts] = await Promise.all([
       Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50),
       Goal.find({ userId: user._id }).sort({ createdAt: -1 }),
       Contact.find({ userId: user._id }).sort({ createdAt: -1 })
     ])
+
+    if (goals.length === 0) {
+      const defaults = [
+        { title: 'PlayStation 5', current: 350, target: 500, items: 'Console & Game', icon: 'fa-gamepad', bg: 'bg-indigo-600' },
+        { title: 'Home Renovation', current: 8500, target: 15000, items: 'Roof & Paint', icon: 'fa-paint-roller', bg: 'bg-emerald-600' },
+        { title: 'Japan Trip', current: 2500, target: 5000, items: 'Flight & Hotel', icon: 'fa-plane', bg: 'bg-rose-600' },
+        { title: 'New MacBook', current: 1200, target: 2500, items: 'Macbook Pro M3 Max', icon: 'fa-laptop', bg: 'bg-gray-700' }
+      ]
+      goals = await Goal.insertMany(defaults.map(g => ({ ...g, userId: user._id })))
+    }
 
     const now = new Date()
     const months = []
@@ -59,6 +69,8 @@ router.get('/', async (req, res, next) => {
       expense: expenseByMonth.map(v => Math.round(v))
     }
 
+    const bgByType = { wedding: 'bg-rose-600', hajj: 'bg-emerald-600', emergency: 'bg-red-600', tech: 'bg-indigo-600', education: 'bg-blue-600', savings: 'bg-emerald-600' }
+
     const payload = {
       user: {
         username: user.fullname,
@@ -67,7 +79,15 @@ router.get('/', async (req, res, next) => {
         totalBalance: Number(totalBalance.toFixed(2))
       },
       chartData,
-      goals: goals.map(g => ({ id: g._id.toString(), title: g.title, current: g.current, target: g.target, items: g.items, icon: g.icon || 'fa-plane', bg: g.bg || 'bg-indigo-600' })),
+      goals: goals.map(g => ({
+        id: g._id.toString(),
+        title: g.title,
+        current: g.current,
+        target: g.target,
+        items: g.items || (g.deadline ? `Target by ${g.deadline.toISOString().slice(0,10)}` : (g.type ? `${g.type[0].toUpperCase()}${g.type.slice(1)} Goal` : 'Savings Goal')),
+        icon: g.icon || 'fa-plane',
+        bg: g.bg || bgByType[g.type] || 'bg-indigo-600'
+      })),
       transactions: transactions.map(t => ({ id: t._id.toString(), title: t.title, category: t.category, amount: Number(t.amount), date: t.date.toISOString().slice(0,10), icon: iconMap[t.category] || 'fa-circle-dollar-to-slot' })),
       contacts: contacts.map(c => ({ id: c._id.toString(), name: c.name, avatarType: c.avatarType, icon: c.icon, avatar: c.avatar }))
     }

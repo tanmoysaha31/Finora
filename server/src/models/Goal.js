@@ -8,7 +8,12 @@ const goalSchema = new mongoose.Schema(
     target: { type: Number, required: true },
     items: { type: String },
     icon: { type: String },
-    bg: { type: String }
+    bg: { type: String },
+    // Extended fields for SavingsGoals page
+    type: { type: String },
+    deadline: { type: Date },
+    color: { type: String },
+    shadow: { type: String }
   },
   { timestamps: true }
 )

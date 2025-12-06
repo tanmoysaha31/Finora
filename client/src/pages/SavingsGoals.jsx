@@ -10,19 +10,28 @@ export default function SavingsGoals() {
   const [modalStep, setModalStep] = useState(1)
   const [dashboardStats, setDashboardStats] = useState({ totalSaved: 0, totalTarget: 0, overallProgress: 0 })
   const [newGoal, setNewGoal] = useState({ type: '', title: '', targetAmount: '', savedAmount: '', deadline: '', icon: '' })
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   useEffect(() => {
-    setTimeout(() => {
-      const mockGoals = [
-        { id: 1, title: 'Wedding Fund', type: 'wedding', savedAmount: 12500, targetAmount: 30000, deadline: '2025-12-01', icon: 'fa-ring', color: 'from-pink-500 to-rose-500', shadow: 'shadow-pink-500/20' },
-        { id: 2, title: 'Hajj Pilgrimage', type: 'hajj', savedAmount: 4500, targetAmount: 8000, deadline: '2026-06-15', icon: 'fa-kaaba', color: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-500/20' },
-        { id: 3, title: 'Emergency Fund', type: 'emergency', savedAmount: 5000, targetAmount: 10000, deadline: '2024-12-31', icon: 'fa-heart-pulse', color: 'from-red-500 to-orange-500', shadow: 'shadow-red-500/20' },
-        { id: 4, title: 'New MacBook', type: 'tech', savedAmount: 1200, targetAmount: 2500, deadline: '2024-05-20', icon: 'fa-laptop', color: 'from-blue-500 to-indigo-500', shadow: 'shadow-blue-500/20' }
-      ]
-      setGoals(mockGoals)
-      calculateStats(mockGoals)
-      setLoading(false)
-    }, 800)
+    const loadGoals = async () => {
+      try {
+        setLoading(true)
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const url = userId ? `${API_BASE}/api/goals?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/goals`
+        const res = await fetch(url)
+        const payload = await res.json()
+        if (!res.ok || !payload?.goals) throw new Error(payload?.error || 'Failed to load goals')
+        setGoals(payload.goals)
+        calculateStats(payload.goals)
+      } catch (_) {
+        setGoals([])
+        calculateStats([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadGoals()
   }, [])
 
   const calculateStats = (data) => {
