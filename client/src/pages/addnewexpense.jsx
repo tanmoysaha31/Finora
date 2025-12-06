@@ -30,7 +30,7 @@ import {
  * ------------------------------------------------------------------
  * CONFIGURATION & THEME
  * ------------------------------------------------------------------
- * Font Family: 'Work Sans', 'Inter', sans-serif (Per instructions)
+ * Font Family: 'Inter' (body), 'Plus Jakarta Sans' (headings) - Matching Dashboard
  * Color Palette: Dark #0D0D12, Purple #7C3AED, Pink #DB2777, White
  */
 
@@ -162,16 +162,15 @@ export default function App() {
       setIsSubmitting(false);
       setShowSuccess(true);
       
-      // Reset after success animation
+      // Navigate to EmotionalState page after showing success briefly
       setTimeout(() => {
-        setShowSuccess(false);
-        setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }));
-      }, 2000);
+        navigate('/emotional-state');
+      }, 1000);
     }, 1500);
   };
 
   return (
-    <div className={`min-h-screen ${THEME.colors.bg} font-sans text-white overflow-x-hidden selection:bg-purple-500/30 selection:text-white`}>
+    <div className={`min-h-screen ${THEME.colors.bg} text-white overflow-x-hidden selection:bg-purple-500/30 selection:text-white`}>
       {/* Background Gradients & Blurs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 rounded-full blur-[120px] animate-pulse-slow" />
@@ -183,11 +182,11 @@ export default function App() {
         
         {/* --- SIDEBAR (Desktop) --- */}
         <aside className="hidden lg:flex flex-col w-72 h-full border-r border-white/5 bg-[#0B0B0F]/90 backdrop-blur-xl p-6">
-          <div className="flex items-center gap-3 mb-12">
+          <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
               <Zap className="text-white" size={20} fill="currentColor" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">Finora</h1>
+            <h1 className="text-2xl font-bold tracking-tight font-display">Finora</h1>
           </div>
 
           <div className="space-y-2 flex-1">
@@ -220,17 +219,17 @@ export default function App() {
         <main className="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           
           {/* Header Mobile/Desktop */}
-          <header className="sticky top-0 z-30 flex items-center justify-between p-6 lg:px-10 border-b border-white/5 bg-[#0B0B0F]/80 backdrop-blur-md">
-            <div className="lg:hidden flex items-center gap-3">
+          <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:px-6 md:py-3 lg:px-8 lg:py-4 border-b border-white/5 bg-[#0B0B0F]/80 backdrop-blur-md">
+            <div className="lg:hidden flex items-center gap-2">
                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                   <Zap size={16} fill="currentColor" />
                </div>
-               <span className="font-bold text-lg">Finora</span>
+               <span className="font-bold text-lg font-display">Finora</span>
             </div>
             
             <div className="hidden lg:block">
-              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Add New Expense</h2>
-              <p className="text-sm text-gray-500">Track your daily spending easily</p>
+              <h2 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 font-display">Add New Expense</h2>
+              <p className="text-sm md:text-base text-gray-500 mt-0.5">Track your daily spending easily</p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -245,33 +244,33 @@ export default function App() {
             </div>
           </header>
 
-          <div className="p-4 lg:p-10 max-w-7xl mx-auto">
+          <div className="p-2 md:p-3 lg:p-6 max-w-7xl mx-auto">
             
             {/* --- LAYOUT GRID --- */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-2 lg:gap-4 xl:gap-6">
               
               {/* LEFT COLUMN: MAIN FORM */}
-              <div className="xl:col-span-2 space-y-6">
+              <div className="xl:col-span-2 space-y-3 lg:space-y-4 xl:space-y-6">
                 
                 {/* 1. Category Selector */}
-                <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                  <label className="text-sm font-medium text-gray-400 ml-1">Select Category</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="space-y-3 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                  <label className="text-sm md:text-base font-medium text-gray-400 ml-1">Select Category</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => handleCategorySelect(cat.id)}
                         className={`
-                          relative flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all duration-300
+                          relative flex flex-col items-center justify-center gap-2 p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-300
                           ${formData.category === cat.id 
-                            ? 'bg-white/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)] transform scale-105' 
+                            ? 'bg-white/10 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)] transform scale-[1.02]' 
                             : 'bg-[#1A1A23]/40 border-white/5 hover:bg-[#1A1A23]/80 hover:border-white/10'}
                         `}
                       >
-                        <div className={`p-2 rounded-full ${cat.bg} ${cat.color} ${formData.category === cat.id ? 'animate-bounce-short' : ''}`}>
-                          <cat.icon size={20} />
+                        <div className={`p-1.5 md:p-2 rounded-full ${cat.bg} ${cat.color} ${formData.category === cat.id ? 'animate-bounce-short' : ''}`}>
+                          <cat.icon size={18} className="md:w-5 md:h-5" />
                         </div>
-                        <span className={`text-xs font-medium ${formData.category === cat.id ? 'text-white' : 'text-gray-400'}`}>
+                        <span className={`text-[10px] md:text-xs font-medium text-center leading-tight ${formData.category === cat.id ? 'text-white' : 'text-gray-400'}`}>
                           {cat.name}
                         </span>
                         {formData.category === cat.id && (
@@ -286,34 +285,34 @@ export default function App() {
 
                 {/* 2. Amount & Name Card */}
                 <div className={`
-                  p-6 rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md relative overflow-hidden group
+                  p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md relative overflow-hidden group
                   animate-slide-up
                 `} style={{ animationDelay: '0.2s' }}>
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all duration-700" />
+                  <div className="absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-purple-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all duration-700" />
                   
-                  <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
                     {/* Amount Input */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-400">Amount Spent</label>
+                      <label className="text-sm md:text-base font-medium text-gray-400">Amount Spent</label>
                       <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={24} />
+                        <DollarSign className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 md:w-6 md:h-6" />
                         <input
                           type="number"
                           name="amount"
                           value={formData.amount}
                           onChange={handleInputChange}
                           placeholder="0.00"
-                          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-black/20 border border-white/5 text-3xl font-bold text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
+                          className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 rounded-xl md:rounded-2xl bg-black/20 border border-white/5 text-2xl md:text-3xl font-bold text-white placeholder-gray-700 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
                         />
                       </div>
                     </div>
 
                     {/* Expense Name Input */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-400">Expense Title</label>
+                      <label className="text-sm md:text-base font-medium text-gray-400">Expense Title</label>
                       <div className="relative h-full">
-                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Tag className="text-gray-500" size={18} />
+                         <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                            <Tag className="text-gray-500 w-4 h-4 md:w-[18px] md:h-[18px]" />
                          </div>
                         <input
                           type="text"
@@ -321,7 +320,7 @@ export default function App() {
                           value={formData.title}
                           onChange={handleInputChange}
                           placeholder="Eg: Hangout at Chillox"
-                          className="w-full h-[74px] pl-12 pr-4 rounded-2xl bg-black/20 border border-white/5 text-lg text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition-all"
+                          className="w-full h-[60px] md:h-[74px] pl-10 md:pl-12 pr-4 rounded-xl md:rounded-2xl bg-black/20 border border-white/5 text-base md:text-lg text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition-all"
                         />
                       </div>
                     </div>
@@ -329,44 +328,44 @@ export default function App() {
                 </div>
 
                 {/* 3. Details Row (Date & Payment) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                   
                   {/* Date Picker (Styled) */}
-                  <div className="p-6 rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md hover:border-white/10 transition-all group">
-                    <label className="block text-sm font-medium text-gray-400 mb-4 group-hover:text-purple-400 transition-colors">Date of Transaction</label>
+                  <div className="p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md hover:border-white/10 transition-all group">
+                    <label className="block text-sm md:text-base font-medium text-gray-400 mb-3 md:mb-4 group-hover:text-purple-400 transition-colors">Date of Transaction</label>
                     <div className="relative">
                       <input
                         type="date"
                         name="date"
                         value={formData.date}
                         onChange={handleInputChange}
-                        className="w-full p-4 pl-12 rounded-xl bg-black/20 border border-white/5 text-white focus:outline-none focus:border-purple-500/50 transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                        className="w-full p-3 md:p-4 pl-10 md:pl-12 rounded-xl bg-black/20 border border-white/5 text-sm md:text-base text-white focus:outline-none focus:border-purple-500/50 transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                       />
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none" size={20} />
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+                      <Calendar className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none w-[18px] h-[18px] md:w-5 md:h-5" />
+                      <ChevronDown className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {/* Visual Calendar Grid Hint (Decorative) */}
-                    <div className="mt-4 flex justify-between px-2 text-[10px] text-gray-600 font-mono">
+                    <div className="mt-3 md:mt-4 flex justify-between px-2 text-[10px] text-gray-600 font-mono">
                       <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                     </div>
                   </div>
 
                   {/* Payment Method */}
-                  <div className="p-6 rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md hover:border-white/10 transition-all">
-                    <label className="block text-sm font-medium text-gray-400 mb-4">Payment Method</label>
+                  <div className="p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl border border-white/5 bg-[#1A1A23]/40 backdrop-blur-md hover:border-white/10 transition-all">
+                    <label className="block text-sm md:text-base font-medium text-gray-400 mb-3 md:mb-4">Payment Method</label>
                     <div className="space-y-2">
                       <div className="relative">
                         <button 
-                          className="w-full p-4 pl-12 pr-10 rounded-xl bg-black/20 border border-white/5 text-left text-white flex items-center justify-between group hover:border-purple-500/30 transition-all"
+                          className="w-full p-3 md:p-4 pl-10 md:pl-12 pr-8 md:pr-10 rounded-xl bg-black/20 border border-white/5 text-left text-sm md:text-base text-white flex items-center justify-between group hover:border-purple-500/30 transition-all"
                         >
                           <span className="flex items-center gap-2">
                              {/* Dynamic Icon based on selection would go here */}
                              {PAYMENT_METHODS.find(p => p.id === formData.paymentMethod)?.name || 'Select Method'}
                           </span>
-                          <Settings className="text-gray-600 group-hover:text-white transition-colors" size={16} />
+                          <Settings className="text-gray-600 group-hover:text-white transition-colors w-3.5 h-3.5 md:w-4 md:h-4" />
                         </button>
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 bg-purple-500/20 rounded-lg text-purple-400">
-                           <CreditCard size={14} />
+                        <div className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 p-1 md:p-1.5 bg-purple-500/20 rounded-lg text-purple-400">
+                           <CreditCard className="w-3 h-3 md:w-[14px] md:h-[14px]" />
                         </div>
                       </div>
                       
@@ -377,14 +376,14 @@ export default function App() {
                             key={pm.id}
                             onClick={() => handlePaymentSelect(pm.id)}
                             className={`
-                              flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-all
+                              flex items-center gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-lg text-[10px] md:text-xs font-medium transition-all
                               ${formData.paymentMethod === pm.id 
                                 ? 'bg-white/10 text-white border border-white/10' 
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}
                             `}
                           >
-                            <pm.icon size={12} />
-                            {pm.name}
+                            <pm.icon className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span className="truncate">{pm.name}</span>
                           </button>
                         ))}
                       </div>
@@ -394,25 +393,25 @@ export default function App() {
 
                 {/* 4. Notes Section */}
                 <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                  <div className="p-1 rounded-2xl bg-gradient-to-r from-white/5 to-transparent">
+                  <div className="p-1 rounded-xl md:rounded-2xl bg-gradient-to-r from-white/5 to-transparent">
                     <textarea
                       name="note"
                       value={formData.note}
                       onChange={handleInputChange}
                       placeholder="Add a note (optional)..."
                       rows={3}
-                      className="w-full p-4 rounded-xl bg-[#1A1A23]/60 border border-white/5 text-white placeholder-gray-600 focus:outline-none focus:border-white/20 resize-none transition-all"
+                      className="w-full p-3 md:p-4 rounded-xl bg-[#1A1A23]/60 border border-white/5 text-sm md:text-base text-white placeholder-gray-600 focus:outline-none focus:border-white/20 resize-none transition-all"
                     />
                   </div>
                 </div>
 
                 {/* 5. Submit Action */}
-                <div className="pt-4 animate-slide-up" style={{ animationDelay: '0.5s' }}>
+                <div className="pt-2 md:pt-4 animate-slide-up" style={{ animationDelay: '0.5s' }}>
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
                     className={`
-                      relative w-full py-4 rounded-2xl font-bold text-lg tracking-wide overflow-hidden group transition-all duration-300
+                      relative w-full py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg tracking-wide overflow-hidden group transition-all duration-300
                       ${isSubmitting ? 'cursor-not-allowed opacity-90' : 'hover:shadow-[0_0_40px_rgba(219,39,119,0.3)] hover:scale-[1.01]'}
                     `}
                   >
@@ -445,17 +444,17 @@ export default function App() {
               </div>
 
               {/* RIGHT COLUMN: PREDICTIONS & QUICK ADDS */}
-              <div className="xl:col-span-1 space-y-6">
+              <div className="xl:col-span-1 space-y-3 lg:space-y-4 xl:space-y-6">
                 
                 {/* AI Suggestion Card */}
-                <div className="p-6 rounded-3xl bg-gradient-to-b from-purple-900/20 to-transparent border border-white/5 relative overflow-hidden animate-fade-in-right delay-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-                      <Zap size={20} className="text-purple-400" />
+                <div className="p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-b from-purple-900/20 to-transparent border border-white/5 relative overflow-hidden animate-fade-in-right delay-200">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <Zap className="w-[18px] h-[18px] md:w-5 md:h-5 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white mb-1">Smart Suggestions</h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">
+                      <h3 className="text-sm md:text-base font-semibold text-white mb-1 font-display">Smart Suggestions</h3>
+                      <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
                         Based on your spending on <span className="text-white font-medium">Wednesdays</span>, you might want to add these:
                       </p>
                     </div>
@@ -463,29 +462,29 @@ export default function App() {
                 </div>
 
                 {/* Quick Add List */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider pl-2">Quick Add</h3>
+                <div className="space-y-2 md:space-y-3">
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider pl-2">Quick Add</h3>
                   {QUICK_ADDS.map((qa, index) => (
                     <div 
                       key={qa.id}
                       onClick={() => handleQuickAdd(qa)}
-                      className="group p-4 rounded-2xl bg-[#1A1A23]/40 border border-white/5 hover:border-purple-500/30 hover:bg-[#1A1A23]/80 cursor-pointer transition-all duration-300 animate-fade-in-right"
+                      className="group p-3 md:p-4 rounded-xl md:rounded-2xl bg-[#1A1A23]/40 border border-white/5 hover:border-purple-500/30 hover:bg-[#1A1A23]/80 cursor-pointer transition-all duration-300 animate-fade-in-right"
                       style={{ animationDelay: `${0.2 + (index * 0.1)}s` }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-300">
-                             <qa.icon size={20} className="text-gray-400 group-hover:text-purple-400 transition-colors" />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-300 shrink-0">
+                             <qa.icon className="w-[18px] h-[18px] md:w-5 md:h-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
                           </div>
-                          <div>
-                            <h4 className="font-medium text-white group-hover:text-purple-200 transition-colors">{qa.name}</h4>
-                            <p className="text-xs text-gray-500">Regular • {qa.category === 'cat_1' ? 'Food' : qa.category === 'cat_3' ? 'Transport' : 'Entertainment'}</p>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm md:text-base font-medium text-white group-hover:text-purple-200 transition-colors truncate">{qa.name}</h4>
+                            <p className="text-[10px] md:text-xs text-gray-500 truncate">Regular • {qa.category === 'cat_1' ? 'Food' : qa.category === 'cat_3' ? 'Transport' : 'Entertainment'}</p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="font-bold text-white">${qa.amount}</span>
-                          <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center mt-1 group-hover:bg-purple-500 group-hover:text-white transition-all">
-                             <Plus size={12} />
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-sm md:text-base font-bold text-white">${qa.amount}</span>
+                          <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-white/5 flex items-center justify-center mt-1 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                             <Plus className="w-2.5 h-2.5 md:w-3 md:h-3" />
                           </div>
                         </div>
                       </div>
@@ -493,27 +492,27 @@ export default function App() {
                   ))}
                   
                   {/* Custom 'Other' Option */}
-                  <div className="p-4 rounded-2xl border border-dashed border-white/10 hover:border-white/30 hover:bg-white/5 cursor-pointer transition-all flex items-center justify-center gap-2 text-gray-500 hover:text-white">
-                    <Plus size={16} />
-                    <span className="text-sm font-medium">Create Custom Preset</span>
+                  <div className="p-3 md:p-4 rounded-xl md:rounded-2xl border border-dashed border-white/10 hover:border-white/30 hover:bg-white/5 cursor-pointer transition-all flex items-center justify-center gap-2 text-gray-500 hover:text-white">
+                    <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <span className="text-xs md:text-sm font-medium">Create Custom Preset</span>
                   </div>
                 </div>
 
                 {/* Monthly Limit Mini-Chart */}
-                <div className="p-6 rounded-3xl bg-[#1A1A23]/40 border border-white/5 mt-8 animate-fade-in-right delay-500">
-                  <div className="flex justify-between items-end mb-4">
+                <div className="p-4 md:p-5 lg:p-6 rounded-2xl md:rounded-3xl bg-[#1A1A23]/40 border border-white/5 mt-4 md:mt-6 lg:mt-8 animate-fade-in-right delay-500">
+                  <div className="flex justify-between items-end mb-3 md:mb-4">
                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Monthly Budget</p>
-                        <h3 className="text-xl font-bold text-white">65% Used</h3>
+                        <p className="text-[10px] md:text-xs text-gray-400 mb-1">Monthly Budget</p>
+                        <h3 className="text-lg md:text-xl font-bold text-white font-display">65% Used</h3>
                      </div>
                      <div className="text-right">
-                        <p className="text-xs text-purple-400 font-mono">$1,240 / $2,000</p>
+                        <p className="text-[10px] md:text-xs text-purple-400 font-mono">$1,240 / $2,000</p>
                      </div>
                   </div>
-                  <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden">
+                  <div className="h-2.5 md:h-3 w-full bg-black/40 rounded-full overflow-hidden">
                      <div className="h-full bg-gradient-to-r from-purple-600 to-pink-600 w-[65%] rounded-full shadow-[0_0_10px_rgba(219,39,119,0.5)]" />
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-3 text-center">You are on track to save $760 this month</p>
+                  <p className="text-[9px] md:text-[10px] text-gray-500 mt-2 md:mt-3 text-center">You are on track to save $760 this month</p>
                 </div>
 
               </div>
@@ -524,10 +523,14 @@ export default function App() {
 
       {/* --- CUSTOM ANIMATION STYLES --- */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         
         body {
-          font-family: 'Work Sans', sans-serif;
+          font-family: 'Inter', sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6, .font-display {
+          font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         .animate-pulse-slow {

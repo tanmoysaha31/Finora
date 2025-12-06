@@ -78,7 +78,8 @@ export default function Dashboard() {
         { id: 't4', title: 'Uber Ride', category: 'Transport', amount: -24.0, date: '2023-10-24' },
         { id: 't5', title: 'Netflix Sub', category: 'Entertainment', amount: -19.99, date: '2023-10-23' },
         { id: 't6', title: 'Whole Foods', category: 'Shopping', amount: -142.8, date: '2023-10-22' },
-        { id: 't7', title: 'Electric Bill', category: 'Utility', amount: -85.0, date: '2023-10-20' }
+        { id: 't7', title: 'Electric Bill', category: 'Utility', amount: -85.0, date: '2023-10-20' },
+        { id: 't8', title: 'Gas Bill', category: 'Utility', amount: -35.0, date: '2025-10-20' }
       ],
       contacts: [
         { id: 'c1', name: 'Mom', avatarType: 'icon', icon: 'fa-solid fa-user', avatar: 'https://cdn-icons-png.flaticon.com/512/6997/6997662.png' },
@@ -338,6 +339,16 @@ export default function Dashboard() {
             <Link to="/addnewexpense" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-plus w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
               <span>Add new expense</span>
+            </Link>
+            
+            <Link to="/goals" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-bullseye w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
+              <span>Saving Goal</span>
+            </Link>
+            
+            <Link to="/budget" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-scale-balanced w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
+              <span>Budget Planner</span>
             </Link>
             
             <Link to="/payments" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
