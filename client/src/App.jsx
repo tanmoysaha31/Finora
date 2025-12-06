@@ -4,6 +4,9 @@ import Login from './pages/login.jsx'
 import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AddNewExpense from './pages/addnewexpense.jsx'
+import BudgetPlanner from './pages/BudgetPlanner.jsx'
+import EmotionalState from './pages/EmotionalState.jsx'
+import SavingsGoals from './pages/SavingsGoals.jsx'
 
 export default function App() {
   return (
@@ -14,6 +17,9 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/addnewexpense" element={<AddNewExpense />} />
+        <Route path="/budget" element={<BudgetPlanner />} />
+        <Route path="/emotional-state" element={<EmotionalState />} />
+        <Route path="/goals" element={<SavingsGoals />} />
         </Routes>
     </BrowserRouter>
   )

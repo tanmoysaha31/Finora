@@ -171,7 +171,8 @@ export default function App() {
       setTimeout(() => {
         setShowSuccess(false)
         setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }))
-      }, 2000)
+        navigate('/emotional-state')
+      }, 1000)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to add expense')
     } finally {
