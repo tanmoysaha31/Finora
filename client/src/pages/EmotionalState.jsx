@@ -37,19 +37,27 @@ export default function EmotionalState() {
 
   useEffect(() => { setTimeout(() => setPageReady(true), 300) }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedMood) return
     setLoading(true)
     const payload = { expenseId: currentExpense.id, mood: selectedMood.id, necessityScore: necessity, socialContext, timestamp: new Date() }
-    console.log('Saving to MongoDB:', payload)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await fetch('http://localhost:5000/api/emotions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setShowSuccess(true)
       setTimeout(() => {
         setAnimateOut(true)
         setTimeout(() => navigate('/dashboard'), 500)
-      }, 2000)
-    }, 1200)
+      }, 1500)
+    } catch (e) {
+      console.error('Failed to save emotion:', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getTheme = () => {
