@@ -6,6 +6,7 @@ export default function Income() {
   const navigate = useNavigate();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   // --- STATE MANAGEMENT ---
   const [loading, setLoading] = useState(false);
@@ -23,16 +24,7 @@ export default function Income() {
     paymentMethod: 'bank' // 'bank', 'cash'
   });
 
-  // --- MOCK DB: User Financial Context ---
-  const incomeStats = {
-    monthlyTotal: 5200.00,
-    lastMonthTotal: 4800.00,
-    sources: { salary: 4000, freelance: 800, investment: 400 },
-    recent: [
-      { id: 1, title: 'Freelance Project', amount: 450, date: 'Yesterday', type: 'freelance' },
-      { id: 2, title: 'Monthly Salary', amount: 4000, date: 'Oct 01', type: 'salary' }
-    ]
-  };
+  const [incomeStats, setIncomeStats] = useState({ monthlyTotal: 0, lastMonthTotal: 0, sources: {}, recent: [] });
 
   // --- CONFIGURATION: Income Sources ---
   const sources = [
@@ -49,23 +41,47 @@ export default function Income() {
     setTimeout(() => setPageReady(true), 300);
   }, []);
 
-  // Chart: Income Distribution
+  useEffect(() => {
+    (async () => {
+      try {
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const url = userId ? `${API_BASE}/api/income/summary?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/income/summary`
+        const r = await fetch(url)
+        const d = await r.json()
+        setIncomeStats({
+          monthlyTotal: Number(d?.monthlyTotal || 0),
+          lastMonthTotal: Number(d?.lastMonthTotal || 0),
+          sources: d?.sources || {},
+          recent: Array.isArray(d?.recent) ? d.recent : []
+        })
+      } catch (_) {}
+    })()
+  }, [])
+
   useEffect(() => {
     if (!pageReady || !chartRef.current) return;
     if (chartInstance.current) chartInstance.current.destroy();
 
     const ctx = chartRef.current.getContext('2d');
+    const labels = Object.keys(incomeStats.sources)
+    const data = labels.map(l => Number(incomeStats.sources[l] || 0))
+    const colorMap = {
+      Salary: 'rgba(16, 185, 129, 0.8)',
+      Freelance: 'rgba(99, 102, 241, 0.8)',
+      Investment: 'rgba(168, 85, 247, 0.8)',
+      Business: 'rgba(59, 130, 246, 0.8)',
+      Gift: 'rgba(236, 72, 153, 0.8)',
+      Other: 'rgba(156, 163, 175, 0.8)'
+    }
+    const colors = labels.map(l => colorMap[l] || colorMap.Other)
     chartInstance.current = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Salary', 'Freelance', 'Investments'],
+        labels,
         datasets: [{
-          data: [4000, 800, 400],
-          backgroundColor: [
-            'rgba(16, 185, 129, 0.8)', // Emerald
-            'rgba(99, 102, 241, 0.8)', // Indigo
-            'rgba(168, 85, 247, 0.8)', // Purple
-          ],
+          data,
+          backgroundColor: colors,
           borderColor: '#0F0F11',
           borderWidth: 5,
           hoverOffset: 10
@@ -80,31 +96,44 @@ export default function Income() {
     });
 
     return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-  }, [pageReady]);
+  }, [pageReady, incomeStats]);
 
   // --- HANDLERS ---
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.amount || !formData.source) return;
-    
     setLoading(true);
-
-    // MOCK API PAYLOAD
-    const payload = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        timestamp: new Date()
-    };
-    
-    console.log("Saving Income to MongoDB:", payload);
-
-    setTimeout(() => {
-      setLoading(false);
-      setShowSuccess(true);
-      setTimeout(() => {
-        navigate('/dashboard'); // Or stay on page
-      }, 2000);
-    }, 1200);
+    try {
+      let userId = null
+      try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+      const r = await fetch(`${API_BASE}/api/income/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          amount: parseFloat(formData.amount),
+          source: formData.source,
+          date: formData.date,
+          note: formData.note,
+          paymentMethod: formData.paymentMethod,
+          isRecurring: formData.isRecurring
+        })
+      })
+      if (!r.ok) throw new Error('Failed to add income')
+      setShowSuccess(true)
+      const url = userId ? `${API_BASE}/api/income/summary?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/income/summary`
+      const rr = await fetch(url)
+      const d = await rr.json()
+      setIncomeStats({
+        monthlyTotal: Number(d?.monthlyTotal || 0),
+        lastMonthTotal: Number(d?.lastMonthTotal || 0),
+        sources: d?.sources || {},
+        recent: Array.isArray(d?.recent) ? d.recent : []
+      })
+      setTimeout(() => { navigate('/dashboard') }, 2000)
+    } finally {
+      setLoading(false)
+    }
   };
 
   const getSourceColor = (sourceId) => {

@@ -51,6 +51,19 @@ export default function Dashboard() {
     navigate('/login');
   };
 
+  const handleDeleteTransaction = async (id) => {
+    try {
+      const r = await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
+      if (!r.ok) return
+      let userId = null
+      try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+      const url = userId ? `${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/dashboard`
+      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
+      const payload = await res.json()
+      if (res.ok && payload?.user) setData(payload)
+    } catch (_) {}
+  }
+
   // --- 1. Data Fetching Effect (Server) ---
   useEffect(() => {
     const loadDashboard = async () => {
@@ -569,11 +582,14 @@ export default function Dashboard() {
                                   <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 truncate">{tx.category} • {formatDate(tx.date)}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className={`font-display font-bold text-xs md:text-sm ${isPositive ? 'text-emerald-400' : 'text-white'}`}>
+                              <div className="flex items-center flex-none w-[140px] md:w-[168px] justify-end gap-2">
+                                <div className={`w-[80px] md:w-[96px] text-right font-display font-bold text-xs md:text-sm ${isPositive ? 'text-emerald-400' : 'text-white'}`}>
                                   {isPositive ? '+' : ''}{formatCurrency(tx.amount)}
-                                </span>
-                                <button className="w-7 h-7 rounded-lg bg-white/5 hover:bg-purple-600 text-gray-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0">
+                                </div>
+                                <button onClick={() => handleDeleteTransaction(tx.id)} className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-white/10 hover:bg-red-500/30 text-gray-300 hover:text-white flex items-center justify-center transition-colors">
+                                  <i className="fa-solid fa-trash text-[10px]"></i>
+                                </button>
+                                <button onClick={() => navigate(`/emotional-state/${tx.id}`)} className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-white/10 hover:bg-purple-600 text-gray-300 hover:text-white flex items-center justify-center transition-colors">
                                   <i className="fa-solid fa-chevron-right text-[10px]"></i>
                                 </button>
                               </div>
