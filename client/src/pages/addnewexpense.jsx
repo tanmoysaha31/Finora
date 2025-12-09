@@ -103,6 +103,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('add-expense');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const [dashboardBalance, setDashboardBalance] = useState(0)
 
   // --- STATE MANAGEMENT (MERN READY) ---
   const [formData, setFormData] = useState({
@@ -117,6 +119,21 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const url = userId ? `${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/dashboard`
+        const res = await fetch(url)
+        const payload = await res.json()
+        if (res.ok && payload?.user?.totalBalance !== undefined) {
+          setDashboardBalance(Number(payload.user.totalBalance) || 0)
+        }
+      } catch (_) {}
+    })()
+  }, [])
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {
@@ -152,7 +169,7 @@ export default function App() {
         setIsSubmitting(false);
         return;
       }
-      const r = await fetch('http://localhost:5000/api/expenses/add', {
+      const r = await fetch(`${API_BASE}/api/expenses/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,7 +188,7 @@ export default function App() {
       setTimeout(() => {
         setShowSuccess(false)
         setFormData(prev => ({ ...prev, title: '', amount: '', note: '', category: '' }))
-        navigate('/emotional-state')
+        navigate(`/emotional-state/${d.id}`)
       }, 1000)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to add expense')
@@ -246,7 +263,7 @@ export default function App() {
             <div className="flex items-center gap-4">
               <button className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5 text-sm font-medium hover:bg-white/10 transition-all">
                  <Wallet size={16} className="text-purple-400" />
-                 <span>Balance: <span className="text-white font-bold">$124,592.50</span></span>
+                 <span>Balance: <span className="text-white font-bold">{new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(dashboardBalance)}</span></span>
               </button>
               <button className="p-2 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:scale-110 transition-all relative">
                 <div className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 border border-[#0B0B0F]" />

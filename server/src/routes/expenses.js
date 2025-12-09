@@ -25,7 +25,7 @@ router.post('/add', async (req, res, next) => {
       paymentMethod,
       note
     })
-    res.status(201).json({ success: true, id: tx._id })
+    res.status(201).json({ success: true, id: tx._id.toString() })
   } catch (err) {
     next(err)
   }

@@ -21,6 +21,7 @@ export default function App() {
         <Route path="/add-expense" element={<AddNewExpense />} />
         <Route path="/budget" element={<BudgetPlanner />} />
         <Route path="/emotional-state" element={<EmotionalState />} />
+        <Route path="/emotional-state/:id" element={<EmotionalState />} />
         <Route path="/goals" element={<SavingsGoals />} />
         <Route path="/income" element={<Income />} />
         <Route path="/Income" element={<Income />} />

@@ -1,6 +1,7 @@
 import express from 'express'
 import User from '../models/User.js'
 import EmotionCheckin from '../models/EmotionCheckin.js'
+import mongoose from 'mongoose'
 
 const router = express.Router()
 

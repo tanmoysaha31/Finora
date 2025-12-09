@@ -25,7 +25,7 @@ router.delete('/:id', async (req, res, next) => {
         await Goal.updateOne({ _id: goal._id }, { $set: { current: newCurrent } })
       }
     }
-    await EmotionCheckin.deleteMany({ expenseId: id })
+    await EmotionCheckin.deleteMany({ $or: [ { expenseId: id }, { expenseId: tx._id } ] })
     if (tx.amount > 0) {
       let income = null
       if (tx.incomeId) {
