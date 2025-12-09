@@ -1,6 +1,7 @@
 import express from 'express'
 import User from '../models/User.js'
 import Goal from '../models/Goal.js'
+import Transaction from '../models/Transaction.js'
 
 const router = express.Router()
 
@@ -10,23 +11,13 @@ async function ensureUser(userId) {
   return u
 }
 
-// Seed defaults when no goals exist for user
-const DEFAULT_GOALS = [
-  { title: 'Wedding Fund', type: 'wedding', current: 12500, target: 30000, deadline: new Date('2025-12-01'), icon: 'fa-ring', color: 'from-pink-500 to-rose-500', shadow: 'shadow-pink-500/20' },
-  { title: 'Hajj Pilgrimage', type: 'hajj', current: 4500, target: 8000, deadline: new Date('2026-06-15'), icon: 'fa-kaaba', color: 'from-emerald-500 to-teal-500', shadow: 'shadow-emerald-500/20' },
-  { title: 'Emergency Fund', type: 'emergency', current: 5000, target: 10000, deadline: new Date('2024-12-31'), icon: 'fa-heart-pulse', color: 'from-red-500 to-orange-500', shadow: 'shadow-red-500/20' },
-  { title: 'New MacBook', type: 'tech', current: 1200, target: 2500, deadline: new Date('2024-05-20'), icon: 'fa-laptop', color: 'from-blue-500 to-indigo-500', shadow: 'shadow-blue-500/20' }
-]
 
 router.get('/', async (req, res, next) => {
   try {
     const { userId } = req.query
     const user = await ensureUser(userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
-    let goals = await Goal.find({ userId: user._id }).sort({ createdAt: -1 })
-    if (goals.length === 0) {
-      goals = await Goal.insertMany(DEFAULT_GOALS.map(g => ({ ...g, userId: user._id })))
-    }
+    const goals = await Goal.find({ userId: user._id }).sort({ createdAt: -1 })
     const payload = goals.map(g => ({
       id: g._id.toString(),
       title: g.title,
@@ -82,6 +73,55 @@ router.put('/:id', async (req, res, next) => {
     if (shadow !== undefined) update.shadow = shadow
     await Goal.findByIdAndUpdate(id, { $set: update })
     res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const goal = await Goal.findById(id)
+    if (!goal) return res.status(404).json({ error: 'Goal not found' })
+    await Transaction.deleteMany({
+      userId: goal.userId,
+      $or: [
+        { goalId: goal._id },
+        { title: `Savings Deposit - ${goal.title}` }
+      ]
+    })
+    await Goal.deleteOne({ _id: id })
+    res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Fund a savings goal: increments goal.current and writes a negative transaction
+router.post('/:id/fund', async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { userId, amount, note, date } = req.body || {}
+    const amt = Number(amount)
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ error: 'amount must be > 0' })
+    const goal = await Goal.findById(id)
+    if (!goal) return res.status(404).json({ error: 'Goal not found' })
+    const user = await ensureUser(userId || goal.userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    await Goal.findByIdAndUpdate(id, { $inc: { current: amt } })
+
+    const tx = await Transaction.create({
+      userId: user._id,
+      goalId: goal._id,
+      title: `Savings Deposit - ${goal.title}`,
+      category: 'Savings',
+      amount: -Math.abs(amt),
+      date: date ? new Date(date) : new Date(),
+      note: note || 'Goal funding'
+    })
+
+    res.status(201).json({ success: true, transactionId: tx._id.toString() })
   } catch (err) {
     next(err)
   }

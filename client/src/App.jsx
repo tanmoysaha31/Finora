@@ -7,6 +7,7 @@ import AddNewExpense from './pages/addnewexpense.jsx'
 import BudgetPlanner from './pages/BudgetPlanner.jsx'
 import EmotionalState from './pages/EmotionalState.jsx'
 import SavingsGoals from './pages/SavingsGoals.jsx'
+import Income from './pages/Income.jsx'
 
 export default function App() {
   return (
@@ -17,9 +18,12 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/addnewexpense" element={<AddNewExpense />} />
+        <Route path="/add-expense" element={<AddNewExpense />} />
         <Route path="/budget" element={<BudgetPlanner />} />
         <Route path="/emotional-state" element={<EmotionalState />} />
         <Route path="/goals" element={<SavingsGoals />} />
+        <Route path="/income" element={<Income />} />
+        <Route path="/Income" element={<Income />} />
         </Routes>
     </BrowserRouter>
   )

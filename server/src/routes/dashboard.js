@@ -27,21 +27,11 @@ router.get('/', async (req, res, next) => {
     }
     if (!user) return res.status(404).json({ error: 'User not found' })
 
-    let [transactions, goals, contacts] = await Promise.all([
+    const [transactions, goals, contacts] = await Promise.all([
       Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50),
       Goal.find({ userId: user._id }).sort({ createdAt: -1 }),
       Contact.find({ userId: user._id }).sort({ createdAt: -1 })
     ])
-
-    if (goals.length === 0) {
-      const defaults = [
-        { title: 'PlayStation 5', current: 350, target: 500, items: 'Console & Game', icon: 'fa-gamepad', bg: 'bg-indigo-600' },
-        { title: 'Home Renovation', current: 8500, target: 15000, items: 'Roof & Paint', icon: 'fa-paint-roller', bg: 'bg-emerald-600' },
-        { title: 'Japan Trip', current: 2500, target: 5000, items: 'Flight & Hotel', icon: 'fa-plane', bg: 'bg-rose-600' },
-        { title: 'New MacBook', current: 1200, target: 2500, items: 'Macbook Pro M3 Max', icon: 'fa-laptop', bg: 'bg-gray-700' }
-      ]
-      goals = await Goal.insertMany(defaults.map(g => ({ ...g, userId: user._id })))
-    }
 
     const now = new Date()
     const months = []
@@ -69,7 +59,7 @@ router.get('/', async (req, res, next) => {
       expense: expenseByMonth.map(v => Math.round(v))
     }
 
-    const bgByType = { wedding: 'bg-rose-600', hajj: 'bg-emerald-600', emergency: 'bg-red-600', tech: 'bg-indigo-600', education: 'bg-blue-600', savings: 'bg-emerald-600' }
+    const bgByType = { wedding: 'bg-rose-600', hajj: 'bg-emerald-600', emergency: 'bg-red-600', tech: 'bg-indigo-600', education: 'bg-blue-600', savings: 'bg-emerald-600', Religion: 'bg-emerald-600', custom: 'bg-gray-600' }
 
     const payload = {
       user: {
