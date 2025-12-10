@@ -13,6 +13,7 @@ export default function BudgetPlanner() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showSaveToast, setShowSaveToast] = useState(false)
   const [income, setIncome] = useState(0)
+  const [monthlyIncome, setMonthlyIncome] = useState(0)
   const [categories, setCategories] = useState([])
   const [stats, setStats] = useState({ totalBudgeted: 0, totalSpent: 0, remainingBudget: 0, unallocatedIncome: 0 })
 
@@ -33,17 +34,18 @@ export default function BudgetPlanner() {
         const res = await fetch(url)
         const payload = await res.json()
         if (!res.ok || !payload?.categories) throw new Error(payload?.error || 'Failed to load budget')
-        setIncome(payload.income || 0)
+        setIncome((payload.income ?? payload.monthlyIncome ?? 0))
+        setMonthlyIncome(payload.monthlyIncome ?? 0)
         setCategories(payload.categories || [])
       } catch (_) {
-        setIncome(5000)
+        setIncome(0)
         setCategories([
-          { id: 'cat_1', name: 'Housing & Rent', icon: 'fa-house', color: 'purple', spent: 0, limit: 1200 },
-          { id: 'cat_2', name: 'Food & Dining', icon: 'fa-burger', color: 'yellow', spent: 0, limit: 600 },
-          { id: 'cat_3', name: 'Transportation', icon: 'fa-car', color: 'blue', spent: 0, limit: 200 },
-          { id: 'cat_4', name: 'Entertainment', icon: 'fa-gamepad', color: 'pink', spent: 0, limit: 150 },
-          { id: 'cat_5', name: 'Shopping', icon: 'fa-bag-shopping', color: 'orange', spent: 0, limit: 400 },
-          { id: 'cat_6', name: 'Savings & Invest', icon: 'fa-piggy-bank', color: 'green', spent: 0, limit: 1000 }
+          { id: 'cat_1', name: 'Housing & Rent', icon: 'fa-house', color: 'purple', spent: 0, limit: 0 },
+          { id: 'cat_2', name: 'Food & Dining', icon: 'fa-burger', color: 'yellow', spent: 0, limit: 0 },
+          { id: 'cat_3', name: 'Transportation', icon: 'fa-car', color: 'blue', spent: 0, limit: 0 },
+          { id: 'cat_4', name: 'Entertainment', icon: 'fa-gamepad', color: 'pink', spent: 0, limit: 0 },
+          { id: 'cat_5', name: 'Shopping', icon: 'fa-bag-shopping', color: 'orange', spent: 0, limit: 0 },
+          { id: 'cat_6', name: 'Savings & Invest', icon: 'fa-piggy-bank', color: 'green', spent: 0, limit: 0 }
         ])
       } finally {
         setLoading(false)
@@ -113,6 +115,11 @@ export default function BudgetPlanner() {
     }
   }
 
+  const handleUseActualIncome = async () => {
+    setIncome(monthlyIncome)
+    await handleSave()
+  }
+
   const customStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #0F0F11; color: white; overflow-x: hidden; }
@@ -170,11 +177,16 @@ export default function BudgetPlanner() {
                         {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <><i className="fa-solid fa-check"></i> Save Plan</>}
                      </button>
                  </div>
-             ) : (
-                 <button onClick={() => setIsEditing(true)} className="bg:white text-black px-5 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2">
-                    <i className="fa-solid fa-pen-to-square"></i> Adjust Limits
-                 </button>
-             )}
+            ) : (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setIsEditing(true)} className="bg:white text-black px-5 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors shadow-lg flex items-center gap-2">
+                     <i className="fa-solid fa-pen-to-square"></i> Adjust Limits
+                  </button>
+                  <button onClick={handleUseActualIncome} className="px-3 py-2 rounded-xl text-sm font-bold bg-white/10 hover:bg-white/20">
+                    Use Actual Income
+                  </button>
+                </div>
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -186,7 +198,17 @@ export default function BudgetPlanner() {
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Budgeted</p>
                                 <h2 className="text-3xl font-mono font-bold text-white">${stats.totalBudgeted.toLocaleString()}</h2>
-                                <p className="text-[10px] text-gray-500 mt-1">out of ${income} income</p>
+                                {isEditing ? (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] text-gray-500">Income</span>
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                      <input type="number" value={income} onChange={e => setIncome(parseFloat(e.target.value)||0)} className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg pl-5 pr-2 py-1 w-28" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-[10px] text-gray-500 mt-1">out of ${income} income</p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Actual Spent</p>

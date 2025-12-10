@@ -363,6 +363,11 @@ export default function Dashboard() {
               <span>Transactions</span>
             </Link>
 
+            <Link to="/income" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-money-bill-wave w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
+              <span>Income</span>
+            </Link>
+
             <Link to="/payments" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-regular fa-credit-card w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
               <span>Payments</span>
