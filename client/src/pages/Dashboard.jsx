@@ -53,15 +53,44 @@ export default function Dashboard() {
 
   const handleDeleteTransaction = async (id) => {
     try {
-      const r = await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
-      if (!r.ok) return
-      let userId = null
-      try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
-      const url = userId ? `${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/dashboard`
-      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
-      const payload = await res.json()
-      if (res.ok && payload?.user) setData(payload)
-    } catch (_) {}
+      // Call DELETE endpoint to remove transaction and recalculate balance
+      const deleteRes = await fetch(`${API_BASE}/api/transactions/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!deleteRes.ok) {
+        const errorData = await deleteRes.json()
+        console.error('Delete failed:', errorData.error || 'Unknown error')
+        alert(`Failed to delete transaction: ${errorData.error || 'Unknown error'}`)
+        return
+      }
+
+      const deletePayload = await deleteRes.json()
+      
+      if (deletePayload.success) {
+        // Update UI with the new balance returned from server
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const dashboardUrl = userId ? `${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/dashboard`
+        
+        // Fetch fresh dashboard data to ensure full consistency
+        const dashboardRes = await fetch(dashboardUrl, { headers: { 'Content-Type': 'application/json' } })
+        const dashboardPayload = await dashboardRes.json()
+        
+        if (dashboardRes.ok && dashboardPayload?.user) {
+          // Update state with fresh data, ensuring balance is recalculated
+          setData(dashboardPayload)
+          console.log(`Transaction ${id} deleted. New balance: ${formatCurrency(dashboardPayload.user.totalBalance)}`)
+        }
+      } else {
+        console.error('Delete operation reported failure:', deletePayload.message)
+        alert(`Delete failed: ${deletePayload.message || 'Unknown error'}`)
+      }
+    } catch (err) {
+      console.error('Error deleting transaction:', err)
+      alert('Network error while deleting transaction. Please try again.')
+    }
   }
 
   // --- 1. Data Fetching Effect (Server) ---

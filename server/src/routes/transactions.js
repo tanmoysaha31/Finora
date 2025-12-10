@@ -54,4 +54,49 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
+// DELETE Transaction by ID with Balance Reallocation
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    // Find the transaction to delete
+    const transaction = await Transaction.findById(id)
+    
+    if (!transaction) {
+      return res.status(404).json({ success: false, error: 'Transaction not found' })
+    }
+
+    const userId = transaction.userId
+    const deletedAmount = transaction.amount
+
+    // Delete the transaction
+    await Transaction.findByIdAndDelete(id)
+
+    // Recalculate total balance for the user
+    const allTransactions = await Transaction.find({ userId })
+    const newTotalBalance = allTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+
+    // Update user's totalBalance field if it exists, or return computed balance
+    // (Note: User model doesn't have a balance field, but we return computed balance)
+    const user = await User.findById(userId)
+
+    res.json({
+      success: true,
+      message: `Transaction deleted successfully. Amount: ${deletedAmount}`,
+      data: {
+        transactionId: id,
+        deletedAmount,
+        newTotalBalance: Number(newTotalBalance.toFixed(2)),
+        user: {
+          id: user._id.toString(),
+          username: user.fullname,
+          totalBalance: Number(newTotalBalance.toFixed(2))
+        }
+      }
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router
