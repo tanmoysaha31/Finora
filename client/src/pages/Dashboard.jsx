@@ -13,6 +13,9 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [savingsSuggestions, setSavingsSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsPeriod, setSuggestionsPeriod] = useState('monthly');
 
   // --- Utility Functions (Ported from HTML Script) ---
   const formatCurrency = (amount) => {
@@ -78,6 +81,11 @@ export default function Dashboard() {
         const payload = await res.json();
         if (!res.ok || !payload?.user) throw new Error(payload?.error || 'Failed to load dashboard');
         setData(payload);
+        
+        // Load savings suggestions after dashboard data is loaded
+        if (userId) {
+          loadSavingsSuggestions(userId, suggestionsPeriod);
+        }
       } catch (err) {
         setData({ user: { username: 'Guest', plan: 'Free', avatar: 'https://cdn-icons-png.flaticon.com/512/2922/2922510.png', totalBalance: 0 }, chartData: { labels: [], income: [], expense: [] }, goals: [], transactions: [], contacts: [] });
       } finally {
@@ -86,6 +94,37 @@ export default function Dashboard() {
     };
     loadDashboard();
   }, []);
+
+  // --- Fetch Savings Suggestions ---
+  const loadSavingsSuggestions = async (userId, period) => {
+    try {
+      setSuggestionsLoading(true);
+      const res = await fetch(`${API_BASE}/api/savings?userId=${encodeURIComponent(userId)}&period=${period}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const payload = await res.json();
+      if (res.ok && payload?.suggestions) {
+        setSavingsSuggestions(payload.suggestions);
+      }
+    } catch (err) {
+      console.error('Failed to load savings suggestions:', err);
+      setSavingsSuggestions([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  // Handle period change
+  const handlePeriodChange = (period) => {
+    setSuggestionsPeriod(period);
+    let userId = null;
+    try {
+      userId = localStorage.getItem('finora_user_id');
+    } catch (_) {}
+    if (userId) {
+      loadSavingsSuggestions(userId, period);
+    }
+  };
 
   // --- 2. Chart Rendering Effect ---
   useEffect(() => {
@@ -408,7 +447,7 @@ export default function Dashboard() {
               <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#242424] shadow-sm"></span>
             </button>
 
-            <button className="w-11 h-11 rounded-full bg-[#242424] border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-purple-500/30 transition-all flex items-center justify-center hidden sm:flex">
+            <button className="hidden sm:flex w-11 h-11 rounded-full bg-[#242424] border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-purple-500/30 transition-all items-center justify-center">
               <i className="fa-solid fa-headset"></i>
             </button>
 
@@ -455,6 +494,82 @@ export default function Dashboard() {
                 
               {/* LEFT COLUMN (Charts & Goals) */}
               <div className="xl:col-span-2 space-y-2.5 lg:space-y-3 flex flex-col min-h-0">
+
+                {/* SAVINGS SUGGESTIONS SECTION */}
+                <div className="glass-panel rounded-3xl p-4 md:p-5 flex-shrink-0">
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-bold text-white mb-1">💡 Savings Suggestions</h3>
+                      <p className="text-xs md:text-sm text-gray-500">Personalized tips to boost your savings</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handlePeriodChange('weekly')}
+                        className={`px-3 py-1.5 text-xs rounded-lg transition-all ${suggestionsPeriod === 'weekly' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                      >
+                        Weekly
+                      </button>
+                      <button 
+                        onClick={() => handlePeriodChange('monthly')}
+                        className={`px-3 py-1.5 text-xs rounded-lg transition-all ${suggestionsPeriod === 'monthly' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                      >
+                        Monthly
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scroll">
+                    {suggestionsLoading ? (
+                      <>
+                        <div className="skeleton h-20 rounded-xl"></div>
+                        <div className="skeleton h-20 rounded-xl"></div>
+                      </>
+                    ) : savingsSuggestions.length > 0 ? (
+                      savingsSuggestions.map((suggestion, index) => (
+                        <div 
+                          key={suggestion.id} 
+                          className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all cursor-pointer group animate-fade-in"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-lg ${suggestion.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                              <i className={`fa-solid ${suggestion.icon} text-sm`}></i>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">{suggestion.title}</h4>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ${
+                                  suggestion.priority === 'high' ? 'bg-red-500/20 text-red-400' : 
+                                  suggestion.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
+                                  'bg-green-500/20 text-green-400'
+                                }`}>
+                                  {suggestion.priority}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 mb-1.5">{suggestion.description}</p>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <span className="text-purple-400 font-semibold">💰 Impact:</span>
+                                  <span className="text-gray-300">{suggestion.impact}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                  <span className="text-emerald-400 font-semibold">✓ Action:</span>
+                                  <span className="text-gray-300">{suggestion.actionable}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-gray-500 text-sm">
+                        <i className="fa-solid fa-circle-info text-2xl mb-2 block"></i>
+                        <p>No suggestions available yet.</p>
+                        <p className="text-xs mt-1">Add more transactions to get personalized recommendations.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* CHART SECTION */}
                 <div className="glass-panel rounded-3xl p-5 md:p-6 relative overflow-hidden group flex-shrink-0">
