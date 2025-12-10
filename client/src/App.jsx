@@ -8,6 +8,7 @@ import BudgetPlanner from './pages/BudgetPlanner.jsx'
 import EmotionalState from './pages/EmotionalState.jsx'
 import SavingsGoals from './pages/SavingsGoals.jsx'
 import Income from './pages/Income.jsx'
+import Transactions from './pages/Transactions.jsx'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/goals" element={<SavingsGoals />} />
         <Route path="/income" element={<Income />} />
         <Route path="/Income" element={<Income />} />
+        <Route path="/transactions" element={<Transactions />} />
         </Routes>
     </BrowserRouter>
   )

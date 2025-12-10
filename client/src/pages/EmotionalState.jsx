@@ -7,6 +7,7 @@ export default function EmotionalState() {
   const { id } = useParams(); // Get the Transaction ID from the URL
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // --- STATE MANAGEMENT ---
   const [loading, setLoading] = useState(false);
@@ -47,36 +48,62 @@ export default function EmotionalState() {
   useEffect(() => {
     const fetchTransactionDetails = async () => {
       try {
-        if (!id) return; // Handle direct access without ID
+        if (!id) {
+          setFetchingData(false);
+          setPageReady(true);
+          return; // Handle direct access without ID
+        }
         
-        // Use your API URL
-        const response = await fetch(`http://localhost:5000/api/transactions/${id}`);
+        const response = await fetch(`${API_BASE}/api/transactions/${id}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch transaction: ${response.statusText}`);
+        }
+        
         const result = await response.json();
 
         if (result.success && result.data) {
           const data = result.data;
+          const normalizedCategory = normalizeCategoryName(data.category);
           
           // Map DB data to UI structure
           setCurrentExpense({
             id: data._id,
-            title: data.title,
-            amount: data.amount,
-            category: data.category,
+            title: data.title || 'Untitled Expense',
+            amount: Math.abs(Number(data.amount) || 0), // Ensure positive amount for display
+            category: normalizedCategory,
             // Map category names to icons
-            icon: getCategoryIcon(data.category),
+            icon: getCategoryIcon(normalizedCategory),
             date: new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             time: new Date(data.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
           });
 
           setCategoryStats({
-            categoryName: data.category,
-            monthlyTotal: data.context?.monthlyTotal || data.amount, // Fallback
-            monthlyBudget: data.context?.monthlyBudget || 500,
+            categoryName: normalizedCategory,
+            monthlyTotal: data.context?.monthlyTotal || Math.abs(Number(data.amount) || 0),
+            monthlyBudget: data.context?.monthlyBudget || 2000,
             similarMoments: [] // Keep empty or fetch separate history if needed
           });
+        } else {
+          console.error("Invalid response format:", result);
         }
       } catch (error) {
         console.error("Failed to load expense:", error);
+        // Set default values on error
+        setCurrentExpense({
+          id: id,
+          title: 'Expense',
+          amount: 0,
+          category: 'Others',
+          icon: 'fa-receipt',
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        });
+        setCategoryStats({
+          categoryName: 'Others',
+          monthlyTotal: 0,
+          monthlyBudget: 2000,
+          similarMoments: []
+        });
       } finally {
         setFetchingData(false);
         setTimeout(() => setPageReady(true), 100);
@@ -84,20 +111,59 @@ export default function EmotionalState() {
     };
 
     fetchTransactionDetails();
-  }, [id]);
+  }, [id, API_BASE]);
+
+  // Helper to normalize category name (map IDs to names)
+  const normalizeCategoryName = (cat) => {
+    if (!cat) return 'Others';
+    const normalized = String(cat).trim();
+    const categoryMap = {
+      'cat_1': 'Food & Dining',
+      'cat_2': 'Shopping',
+      'cat_3': 'Transportation',
+      'cat_4': 'Entertainment',
+      'cat_5': 'Utilities',
+      'cat_6': 'Others'
+    };
+    return categoryMap[normalized] || normalized;
+  };
 
   // Helper for Category Icons
   const getCategoryIcon = (catName) => {
+    if (!catName) return 'fa-receipt';
+    const normalized = String(catName).trim();
     const map = {
       'Food & Dining': 'fa-burger',
+      'food & dining': 'fa-burger',
+      'Food': 'fa-burger',
+      'food': 'fa-burger',
       'Shopping': 'fa-bag-shopping',
+      'shopping': 'fa-bag-shopping',
       'Transportation': 'fa-car',
+      'transportation': 'fa-car',
+      'Transport': 'fa-car',
+      'transport': 'fa-car',
       'Entertainment': 'fa-gamepad',
+      'entertainment': 'fa-gamepad',
       'Utilities': 'fa-bolt',
+      'utilities': 'fa-bolt',
+      'Utility': 'fa-bolt',
+      'utility': 'fa-bolt',
       'Health': 'fa-heart-pulse',
-      'Others': 'fa-ellipsis'
+      'health': 'fa-heart-pulse',
+      'Others': 'fa-ellipsis',
+      'others': 'fa-ellipsis',
+      'Other': 'fa-ellipsis',
+      'other': 'fa-ellipsis',
+      // Handle category IDs from addnewexpense
+      'cat_1': 'fa-burger',
+      'cat_2': 'fa-bag-shopping',
+      'cat_3': 'fa-car',
+      'cat_4': 'fa-gamepad',
+      'cat_5': 'fa-bolt',
+      'cat_6': 'fa-ellipsis'
     };
-    return map[catName] || 'fa-receipt';
+    return map[normalized] || 'fa-receipt';
   };
 
   // --- SAVE HANDLER (DB Integration) ---
@@ -115,7 +181,7 @@ export default function EmotionalState() {
     };
 
     try {
-        const response = await fetch('http://localhost:5000/api/emotions', {
+        const response = await fetch(`${API_BASE}/api/emotions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -269,7 +335,7 @@ export default function EmotionalState() {
                                 <p className="text-xs text-gray-500 font-mono">{currentExpense?.date} • {currentExpense?.time}</p>
                             </div>
                         </div>
-                        <span className="font-mono text-2xl font-bold text-white">${currentExpense?.amount.toFixed(2)}</span>
+                        <span className="font-mono text-2xl font-bold text-white">${(currentExpense?.amount || 0).toFixed(2)}</span>
                     </div>
                     
                     {/* Monthly Progress Bar within Receipt */}

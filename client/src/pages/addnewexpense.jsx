@@ -169,6 +169,18 @@ export default function App() {
         setIsSubmitting(false);
         return;
       }
+      
+      // Map category ID to category name
+      const categoryMap = {
+        'cat_1': 'Food & Dining',
+        'cat_2': 'Shopping',
+        'cat_3': 'Transportation',
+        'cat_4': 'Entertainment',
+        'cat_5': 'Utilities',
+        'cat_6': 'Others'
+      };
+      const categoryName = categoryMap[formData.category] || formData.category || 'Others';
+      
       const r = await fetch(`${API_BASE}/api/expenses/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -177,7 +189,7 @@ export default function App() {
           title: formData.title,
           amount: Number(formData.amount || 0),
           date: formData.date,
-          category: formData.category || 'Others',
+          category: categoryName,
           paymentMethod: formData.paymentMethod,
           note: formData.note
         })
