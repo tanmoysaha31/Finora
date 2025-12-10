@@ -1,55 +1,54 @@
 import express from 'express'
 import Transaction from '../models/Transaction.js'
-import Goal from '../models/Goal.js'
-import EmotionCheckin from '../models/EmotionCheckin.js'
-import Income from '../models/Income.js'
+import User from '../models/User.js'
 
 const router = express.Router()
 
-router.delete('/:id', async (req, res, next) => {
+// GET Single Transaction by ID
+router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params
-    const tx = await Transaction.findById(id)
-    if (!tx) return res.status(404).json({ error: 'Transaction not found' })
-    if (tx.category === 'Savings') {
-      let goal = null
-      if (tx.goalId) {
-        goal = await Goal.findById(tx.goalId)
-      } else if (tx.title && tx.title.startsWith('Savings Deposit - ')) {
-        const title = tx.title.replace('Savings Deposit - ', '')
-        goal = await Goal.findOne({ title })
-      }
-      if (goal) {
-        const amt = Math.abs(Number(tx.amount) || 0)
-        const newCurrent = Math.max(0, (Number(goal.current) || 0) - amt)
-        await Goal.updateOne({ _id: goal._id }, { $set: { current: newCurrent } })
-      }
+    // Find transaction and verify it exists
+    const transaction = await Transaction.findById(id)
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' })
     }
-    await EmotionCheckin.deleteMany({ $or: [ { expenseId: id }, { expenseId: tx._id } ] })
-    if (tx.amount > 0) {
-      let income = null
-      if (tx.incomeId) {
-        income = await Income.findById(tx.incomeId)
+
+    // Optional: Get aggregated stats for the category to populate the "Monthly Context" on the UI
+    // (This matches the "categoryStats" mock data requirement in your UI)
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    const categoryStatsAgg = await Transaction.aggregate([
+      {
+        $match: {
+          userId: transaction.userId,
+          category: transaction.category,
+          date: { $gte: startOfMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: '$amount' }, // Amount is stored as negative in DB usually, so we might need abs
+          count: { $sum: 1 }
+        }
       }
-      if (!income) {
-        const start = new Date(tx.date)
-        start.setHours(0,0,0,0)
-        const end = new Date(tx.date)
-        end.setHours(23,59,59,999)
-        const src = (tx.category || '').toLowerCase()
-        income = await Income.findOne({
-          userId: tx.userId,
-          amount: Math.abs(Number(tx.amount) || 0),
-          date: { $gte: start, $lte: end },
-          $or: [{ note: tx.title }, { source: src }]
-        })
+    ])
+
+    const monthlyTotal = categoryStatsAgg.length > 0 ? Math.abs(categoryStatsAgg[0].totalSpent) : 0
+
+    res.json({
+      success: true,
+      data: {
+        ...transaction.toObject(),
+        amount: Math.abs(transaction.amount), // Ensure positive for display
+        // Pass extra context for the UI
+        context: {
+          monthlyTotal,
+          monthlyBudget: 500 // Mock budget for now, or fetch from Budget model if you have one
+        }
       }
-      if (income) {
-        await Income.deleteOne({ _id: income._id })
-      }
-    }
-    await Transaction.deleteOne({ _id: id })
-    res.json({ success: true })
+    })
   } catch (err) {
     next(err)
   }

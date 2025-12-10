@@ -30,7 +30,7 @@ import {
  * ------------------------------------------------------------------
  * CONFIGURATION & THEME
  * ------------------------------------------------------------------
- * Font Family: 'Work Sans', 'Inter', sans-serif (Per instructions)
+ * Font Family: 'Inter' (body), 'Plus Jakarta Sans' (headings) - Matching Dashboard
  * Color Palette: Dark #0D0D12, Purple #7C3AED, Pink #DB2777, White
  */
 
@@ -198,7 +198,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${THEME.colors.bg} font-sans text-white overflow-x-hidden selection:bg-purple-500/30 selection:text-white`}>
+    <div className={`min-h-screen ${THEME.colors.bg} text-white overflow-x-hidden selection:bg-purple-500/30 selection:text-white`}>
       {/* Background Gradients & Blurs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 rounded-full blur-[120px] animate-pulse-slow" />
@@ -558,10 +558,14 @@ export default function App() {
 
       {/* --- CUSTOM ANIMATION STYLES --- */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         
         body {
-          font-family: 'Work Sans', sans-serif;
+          font-family: 'Inter', sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+          font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         .animate-pulse-slow {
