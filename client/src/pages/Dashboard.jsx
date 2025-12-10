@@ -11,6 +11,11 @@ export default function Dashboard() {
   // State Management
   const [data, setData] = useState(null);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -178,11 +183,25 @@ export default function Dashboard() {
   }, [data]);
 
   // Filter Transactions Logic
-  const filteredTransactions = data?.transactions?.filter(t => {
-    if (!search) return true;
-    const query = search.toLowerCase();
-    return t.title.toLowerCase().includes(query) || t.category.toLowerCase().includes(query);
-  }) || [];
+  const filteredTransactions = (data?.transactions || []).filter(t => {
+    const q = search.trim().toLowerCase();
+    if (q && !(t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))) return false;
+    if (categoryFilter && String(t.category) !== categoryFilter) return false;
+    if (startDate) {
+      const d = new Date(t.date);
+      const s = new Date(startDate);
+      if (d < s) return false;
+    }
+    if (endDate) {
+      const d = new Date(t.date);
+      const e = new Date(endDate);
+      e.setHours(23,59,59,999);
+      if (d > e) return false;
+    }
+    if (minAmount !== '' && Number(t.amount) < Number(minAmount)) return false;
+    if (maxAmount !== '' && Number(t.amount) > Number(maxAmount)) return false;
+    return true;
+  });
 
   // --- Styles from HTML (Ported) ---
   const customStyles = `
@@ -334,11 +353,16 @@ export default function Dashboard() {
               <span>Saving Goal</span>
             </Link>
             
-            <Link to="/budget" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+            <Link to="/budget" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg:white/5 hover:text:white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-scale-balanced w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
               <span>Budget Planner</span>
             </Link>
             
+            <Link to="/transactions" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-list w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
+              <span>Transactions</span>
+            </Link>
+
             <Link to="/payments" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-regular fa-credit-card w-5 text-center group-hover:text-purple-400 transition-colors"></i> 
               <span>Payments</span>
@@ -545,7 +569,31 @@ export default function Dashboard() {
                 <div className="glass-panel rounded-3xl p-3 md:p-4 flex-1 flex flex-col min-h-0">
                   <div className="flex justify-between items-center mb-2 flex-shrink-0">
                     <h3 className="text-lg md:text-xl font-bold text-white">Transactions</h3>
-                    <button className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">View All</button>
+                    <div className="flex items-center gap-2">
+                      <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg px-2.5 py-2">
+                        <option value="">All</option>
+                        <option>Food</option>
+                        <option>Transport</option>
+                        <option>Shopping</option>
+                        <option>Entertainment</option>
+                        <option>Utility</option>
+                        <option>Salary</option>
+                        <option>Tech</option>
+                        <option>Savings</option>
+                        <option>Others</option>
+                      </select>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-gray-500">From</span>
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg px-2.5 py-2" />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-gray-500">To</span>
+                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg px-2.5 py-2" />
+                      </div>
+                      <input type="number" value={minAmount} onChange={e => setMinAmount(e.target.value)} placeholder="Min" className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg px-2.5 py-2 w-20" />
+                      <input type="number" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} placeholder="Max" className="bg-[#242424] border border-white/10 text-gray-300 text-xs rounded-lg px-2.5 py-2 w-20" />
+                      <button onClick={() => navigate('/transactions')} className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">View All</button>
+                    </div>
                   </div>
                   
                   <div className="space-y-1.5 overflow-y-auto pr-2 flex-1 min-h-0 scrollbar-hide">
