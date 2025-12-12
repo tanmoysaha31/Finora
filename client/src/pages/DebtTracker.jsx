@@ -6,6 +6,7 @@ export default function DebtTracker() {
   const navigate = useNavigate();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   // --- STATE MANAGEMENT ---
   const [loading, setLoading] = useState(true);
@@ -16,31 +17,7 @@ export default function DebtTracker() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [strategy, setStrategy] = useState('snowball'); // 'snowball' or 'avalanche'
 
-  // --- MOCK DB: Debts Data ---
-  // Schema: { id, lender, type, totalAmount, remaining, interestRate, minPayment, dueDate, color, icon, history: [] }
-  const [debts, setDebts] = useState([
-    { 
-      id: 'd1', lender: 'Chase Sapphire', type: 'Credit Card', 
-      totalAmount: 5000, remaining: 2450, interestRate: 24.99, 
-      minPayment: 150, dueDate: '2025-10-15', 
-      color: 'pink', icon: 'fa-credit-card',
-      history: [{ date: '2023-09-15', amount: 200 }, { date: '2023-08-15', amount: 150 }]
-    },
-    { 
-      id: 'd2', lender: 'Federal Student Aid', type: 'Student Loan', 
-      totalAmount: 25000, remaining: 18200, interestRate: 4.5, 
-      minPayment: 220, dueDate: '2030-05-20', 
-      color: 'blue', icon: 'fa-graduation-cap',
-      history: [{ date: '2023-09-01', amount: 220 }]
-    },
-    { 
-      id: 'd3', lender: 'Toyota Financial', type: 'Auto Loan', 
-      totalAmount: 15000, remaining: 9800, interestRate: 6.9, 
-      minPayment: 310, dueDate: '2027-11-01', 
-      color: 'orange', icon: 'fa-car',
-      history: []
-    }
-  ]);
+  const [debts, setDebts] = useState([]);
 
   // Form State for New Debt
   const [newDebt, setNewDebt] = useState({
@@ -56,11 +33,21 @@ export default function DebtTracker() {
 
   // --- EFFECTS ---
   useEffect(() => {
-    // Simulate API Fetch
-    setTimeout(() => {
-      setLoading(false);
-    }, 800);
-  }, []);
+    (async () => {
+      try {
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const url = userId ? `${API_BASE}/api/debts?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/debts`
+        const res = await fetch(url)
+        const payload = await res.json()
+        if (res.ok && Array.isArray(payload?.debts)) {
+          setDebts(payload.debts)
+        }
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
   // Chart: Debt Composition
   useEffect(() => {
@@ -96,41 +83,57 @@ export default function DebtTracker() {
   }, [debts, loading]);
 
   // --- HANDLERS ---
-  const handleAddDebt = (e) => {
+  const handleAddDebt = async (e) => {
     e.preventDefault();
-    const created = {
-      id: `d${Date.now()}`,
-      ...newDebt,
-      remaining: Number(newDebt.totalAmount),
-      totalAmount: Number(newDebt.totalAmount),
-      interestRate: Number(newDebt.interestRate),
-      minPayment: Number(newDebt.minPayment),
-      color: 'purple', icon: 'fa-money-bill-transfer',
-      history: []
-    };
-    setDebts([...debts, created]);
-    setShowAddModal(false);
-    setNewDebt({ lender: '', totalAmount: '', interestRate: '', minPayment: '', dueDate: '', type: 'Personal Loan' });
+    const body = {
+      userId: (()=>{ try { return localStorage.getItem('finora_user_id') } catch(_) { return null } })(),
+      lender: newDebt.lender,
+      totalAmount: Number(newDebt.totalAmount || 0),
+      interestRate: Number(newDebt.interestRate || 0),
+      minPayment: Number(newDebt.minPayment || 0),
+      dueDate: newDebt.dueDate,
+      type: newDebt.type
+    }
+    const res = await fetch(`${API_BASE}/api/debts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const d = await res.json()
+    if (res.ok && d?.success) {
+      const url = `${API_BASE}/api/debts${body.userId ? `?userId=${encodeURIComponent(body.userId)}` : ''}`
+      const r = await fetch(url)
+      const p = await r.json()
+      if (r.ok && Array.isArray(p?.debts)) setDebts(p.debts)
+      setShowAddModal(false)
+      setNewDebt({ lender: '', totalAmount: '', interestRate: '', minPayment: '', dueDate: '', type: 'Personal Loan' })
+    }
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!selectedDebt || !paymentAmount) return;
     const amount = Number(paymentAmount);
-    
-    setDebts(prev => prev.map(d => {
-      if (d.id === selectedDebt.id) {
-        return {
-          ...d,
-          remaining: Math.max(0, d.remaining - amount),
-          history: [{ date: new Date().toISOString().split('T')[0], amount }, ...d.history]
-        };
-      }
-      return d;
-    }));
+    const res = await fetch(`${API_BASE}/api/debts/${selectedDebt.id}/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) })
+    const d = await res.json()
+    if (res.ok && d?.success) {
+      try {
+        let userId = null
+        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        const url = userId ? `${API_BASE}/api/debts?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/debts`
+        const r = await fetch(url)
+        const p = await r.json()
+        if (r.ok && Array.isArray(p?.debts)) setDebts(p.debts)
+      } catch (_) {}
+      setShowPayModal(false)
+      setPaymentAmount('')
+      setSelectedDebt(null)
+    }
+  };
 
-    setShowPayModal(false);
-    setPaymentAmount('');
-    setSelectedDebt(null);
+  const handleDeleteDebt = async (id) => {
+    const ok = typeof window !== 'undefined' ? window.confirm('Delete this debt?') : true
+    if (!ok) return
+    const res = await fetch(`${API_BASE}/api/debts/${id}`, { method: 'DELETE' })
+    const d = await res.json()
+    if (res.ok && d?.success) {
+      setDebts(prev => prev.filter(x => x.id !== id))
+    }
   };
 
   // Sort Debts based on Strategy
@@ -287,12 +290,20 @@ export default function DebtTracker() {
                                             <div className="text-xs text-gray-400">
                                                 Next Due: <span className="text-white font-medium">{new Date(debt.dueDate).toLocaleDateString()}</span>
                                             </div>
-                                            <button 
-                                                onClick={() => { setSelectedDebt(debt); setShowPayModal(true); }}
-                                                className="px-4 py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200 transition-colors shadow-lg"
-                                            >
-                                                Pay Now
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleDeleteDebt(debt.id)}
+                                                    className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-lg"
+                                                >
+                                                    <i className="fa-solid fa-trash mr-1"></i> Delete
+                                                </button>
+                                                <button 
+                                                    onClick={() => { setSelectedDebt(debt); setShowPayModal(true); }}
+                                                    className="px-4 py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200 transition-colors shadow-lg"
+                                                >
+                                                    Pay Now
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );

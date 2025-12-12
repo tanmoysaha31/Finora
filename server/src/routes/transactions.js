@@ -120,6 +120,30 @@ router.delete('/:id', async (req, res, next) => {
         await Goal.updateOne({ _id: goal._id }, { $set: { current: newCurrent } })
       }
     }
+    if (tx.category === 'Debt') {
+      let lender = ''
+      if (tx.title && tx.title.startsWith('Debt Payment - ')) {
+        lender = tx.title.replace('Debt Payment - ', '')
+      }
+      if (lender) {
+        const debt = await (await import('../models/Debt.js')).default.findOne({ userId: tx.userId, lender })
+        if (debt) {
+          const amt = Math.abs(Number(tx.amount) || 0)
+          let restored = amt
+          const idx = (debt.history || []).findIndex(h => String(h.txId || '') === tx._id.toString())
+          if (idx >= 0) {
+            restored = Number(debt.history[idx].amount) || amt
+            debt.history.splice(idx, 1)
+          } else {
+            const sameDayIdx = (debt.history || []).findIndex(h => h.amount === amt && h.date && h.date.toDateString() === tx.date.toDateString())
+            if (sameDayIdx >= 0) debt.history.splice(sameDayIdx, 1)
+          }
+          const newRemaining = Math.min(Number(debt.totalAmount) || restored, Number(debt.remaining || 0) + restored)
+          debt.remaining = newRemaining
+          await debt.save()
+        }
+      }
+    }
     await EmotionCheckin.deleteMany({ $or: [ { expenseId: id }, { expenseId: tx._id } ] })
     if (tx.amount > 0) {
       let income = null
