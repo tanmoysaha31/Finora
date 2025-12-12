@@ -310,6 +310,9 @@ export default function Dashboard() {
             <Link to="/income" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-money-bill-wave w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Income</span>
             </Link>
+            <Link to="/debt" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-chart-simple w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Debt Tracker</span>
+            </Link>
             <Link to="/payments" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-regular fa-credit-card w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Payments</span>
             </Link>
@@ -473,6 +476,23 @@ export default function Dashboard() {
 
           {/* Profile & Actions */}
           <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+            <Link 
+              to="/quiz" 
+              className="hidden md:inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-purple-400/20 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+              <i className="fa-solid fa-brain text-base relative z-10 group-hover:rotate-12 transition-transform duration-300"></i>
+              <span className="text-sm relative z-10 tracking-wide">Take a Quiz</span>
+              <div className="absolute -right-1 -top-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+            </Link>
+            <Link 
+              to="/finance-knowledge" 
+              className="hidden md:inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 via-yellow-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out border border-orange-400/20 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+              <i className="fa-solid fa-lightbulb text-base relative z-10 group-hover:rotate-12 transition-transform duration-300"></i>
+              <span className="text-sm relative z-10 tracking-wide">Finance Knowledge</span>
+            </Link>
             <button className="w-11 h-11 rounded-full bg-[#242424] border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-purple-500/30 transition-all relative flex items-center justify-center group">
               <i className="fa-solid fa-bell group-hover:animate-swing"></i>
               <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#242424] shadow-sm"></span>

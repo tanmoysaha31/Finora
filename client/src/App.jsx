@@ -9,6 +9,11 @@ import EmotionalState from './pages/EmotionalState.jsx'
 import SavingsGoals from './pages/SavingsGoals.jsx'
 import Income from './pages/Income.jsx'
 import Transactions from './pages/Transactions.jsx'
+import DebtTracker from './pages/DebtTracker.jsx'
+import FinancialPersonalityQuiz from './pages/FinancialPersonalityQuiz.jsx'
+import IncomeSources from './pages/IncomeSources.jsx'
+import IncomeOpportunities from './pages/IncomeOpportunities.jsx'
+import FinanceKnowledge from './pages/FinanceKnowledge.jsx'
 
 export default function App() {
   return (
@@ -25,7 +30,11 @@ export default function App() {
         <Route path="/emotional-state/:id" element={<EmotionalState />} />
         <Route path="/goals" element={<SavingsGoals />} />
         <Route path="/income" element={<Income />} />
-        <Route path="/Income" element={<Income />} />
+        <Route path="/debt" element={<DebtTracker />} />
+        <Route path="/quiz" element={<FinancialPersonalityQuiz />} />
+        <Route path="/income-sources" element={<IncomeSources />} />
+        <Route path="/income-opportunities" element={<IncomeOpportunities />} />
+        <Route path="/finance-knowledge" element={<FinanceKnowledge />} />
         <Route path="/transactions" element={<Transactions />} />
         </Routes>
     </BrowserRouter>

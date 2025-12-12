@@ -218,6 +218,14 @@ export default function Income() {
              </div>
           </div>
           <div className="flex items-center gap-3">
+             <button onClick={() => navigate('/income-sources')} className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg">
+                <i className="fa-solid fa-list"></i>
+                <span className="text-sm">Income Sources</span>
+             </button>
+             <button onClick={() => navigate('/income-opportunities')} className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg">
+                <i className="fa-solid fa-star"></i>
+                <span className="text-sm">Opportunities</span>
+             </button>
              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px]">
                  <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="User" className="w-full h-full rounded-full object-cover border-2 border-[#1a1a1a]" />
             </div>
