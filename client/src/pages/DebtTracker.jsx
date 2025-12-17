@@ -18,6 +18,7 @@ export default function DebtTracker() {
   const [strategy, setStrategy] = useState('snowball'); // 'snowball' or 'avalanche'
 
   const [debts, setDebts] = useState([]);
+  const [aiData, setAiData] = useState({ projection: '---', advice: 'Loading insights...' });
 
   // Form State for New Debt
   const [newDebt, setNewDebt] = useState({
@@ -42,6 +43,18 @@ export default function DebtTracker() {
         const payload = await res.json()
         if (res.ok && Array.isArray(payload?.debts)) {
           setDebts(payload.debts)
+        }
+
+        // Fetch AI Debt Advice
+        try {
+          const aiUrl = userId ? `${API_BASE}/api/ai/debt-advice?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/ai/debt-advice`
+          const aiRes = await fetch(aiUrl)
+          const aiPayload = await aiRes.json()
+          if (aiRes.ok) {
+            setAiData(aiPayload)
+          }
+        } catch (e) {
+          console.error("AI Fetch Error:", e)
         }
       } finally {
         setLoading(false)
@@ -331,14 +344,14 @@ export default function DebtTracker() {
                     <div className="glass-panel rounded-3xl p-6 border-l-4 border-green-500">
                         <div className="flex items-center gap-2 mb-3">
                              <i className="fa-solid fa-calendar-check text-green-400"></i>
-                             <h4 className="font-bold text-sm text-white">Debt Free Projection</h4>
+                             <h4 className="font-bold text-sm text-white">Debt Free Projection (AI)</h4>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed mb-4">
-                            Based on your current payment rate, you will be debt free by:
+                            {aiData.advice || "Analyzing your debt and income to estimate freedom date..."}
                         </p>
                         <div className="bg-black/30 p-4 rounded-xl text-center">
-                            <span className="block text-2xl font-bold text-white">August 2028</span>
-                            <span className="text-[10px] text-gray-500">3 years, 8 months remaining</span>
+                            <span className="block text-2xl font-bold text-white">{aiData.projection || '---'}</span>
+                            <span className="text-[10px] text-gray-500">Estimated Completion Date</span>
                         </div>
                     </div>
 

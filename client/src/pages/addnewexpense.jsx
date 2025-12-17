@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   X,
   ChevronDown,
-  Smartphone
+  Smartphone,
+  TrendingDown
 } from 'lucide-react';
 
 /**
@@ -236,8 +237,9 @@ export default function App() {
             <div className="pt-4 pb-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider pl-3 mb-2">Actions</p>
               <NavItem icon={Plus} label="Add Expense" active={true} onClick={() => {}} />
-              <NavItem icon={ArrowLeft} label="Income" onClick={() => navigate('/income')} />
-            </div>
+            <NavItem icon={ArrowLeft} label="Income" onClick={() => navigate('/income')} />
+            <NavItem icon={TrendingDown} label="Debt Tracker" onClick={() => navigate('/debt')} />
+          </div>
             <NavItem icon={Settings} label="Preferences" onClick={() => setActiveTab('settings')} />
           </div>
 

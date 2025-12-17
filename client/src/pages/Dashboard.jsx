@@ -59,7 +59,6 @@ export default function Dashboard() {
       tech: 'fa-laptop-code',
       health: 'fa-heart-pulse',
       others: 'fa-ellipsis',
-      'others': 'fa-ellipsis'
     };
     return map[(category || '').toLowerCase()] || 'fa-circle-dollar-to-slot';
   };
