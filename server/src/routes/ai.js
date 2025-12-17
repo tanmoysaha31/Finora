@@ -102,7 +102,7 @@ router.get('/goal-booster', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
 
         const prompt = `
           Context: Financial app "Finora".
@@ -130,6 +130,128 @@ router.get('/goal-booster', async (req, res, next) => {
     // 3. Fallback Logic
     const fallback = generateFallbackSuggestion(totalIncome, totalExpenses, goals, totalDebt)
     res.json({ suggestion: fallback, source: 'rule-based' })
+
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Income Advice Endpoint
+router.get('/income-advice', async (req, res, next) => {
+  try {
+    const { userId } = req.query
+    const user = await ensureUser(userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const now = new Date()
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    
+    const incomes = await Income.find({ 
+      userId: user._id, 
+      date: { $gte: threeMonthsAgo } 
+    }).sort({ date: -1 })
+
+    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0)
+    const sources = [...new Set(incomes.map(i => i.source))]
+    
+    // AI Generation
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+
+        const prompt = `
+          Context: Financial app "Finora".
+          User Data (Last 3 months):
+          - Total Income: $${totalIncome}
+          - Sources: ${sources.join(', ') || 'None'}
+          - Transaction Count: ${incomes.length}
+          
+          Task: Give a single, short, specific tip (max 25 words) to help the user increase their income stability or diversity. 
+          Be motivating.
+        `
+
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text().trim()
+        
+        return res.json({ suggestion: text, source: 'gemini' })
+      } catch (aiError) {
+        console.error('Gemini API Error:', aiError.message)
+      }
+    }
+
+    // Fallback
+    if (sources.length < 2) return res.json({ suggestion: "Consider diversifying your income with a side hustle or freelance work." })
+    return res.json({ suggestion: "Great job maintaining multiple income streams! Keep tracking every deposit." })
+
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Budget Advice Endpoint
+router.get('/budget-advice', async (req, res, next) => {
+  try {
+    const { userId } = req.query
+    const user = await ensureUser(userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    // Need to fetch budget settings. 
+    // Assuming BudgetPlan model exists or we use local budget data if passed, 
+    // but better to fetch transactions vs income here.
+    // For now, let's look at spending vs income for general budget advice.
+    
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const [transactions, incomes] = await Promise.all([
+      Transaction.find({ userId: user._id, date: { $gte: startOfMonth }, amount: { $lt: 0 } }),
+      Income.find({ userId: user._id, date: { $gte: startOfMonth } })
+    ])
+
+    const totalSpent = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0)
+
+    // Top spending category
+    const categories = {}
+    transactions.forEach(t => {
+      const c = t.category || 'Other'
+      categories[c] = (categories[c] || 0) + Math.abs(t.amount)
+    })
+    const topCategory = Object.entries(categories).sort((a,b) => b[1]-a[1])[0]
+
+    // AI Generation
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+
+        const prompt = `
+          Context: Financial app "Finora".
+          User Data (This Month):
+          - Income: $${totalIncome}
+          - Spent: $${totalSpent}
+          - Top Expense: ${topCategory ? topCategory[0] + ' ($' + topCategory[1] + ')' : 'None'}
+          
+          Task: Give a single, short, actionable budget tip (max 25 words). 
+          Focus on savings rate or cutting the top expense.
+        `
+
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text().trim()
+        
+        return res.json({ suggestion: text, source: 'gemini' })
+      } catch (aiError) {
+        console.error('Gemini API Error:', aiError.message)
+      }
+    }
+
+    // Fallback
+    if (totalSpent > totalIncome) return res.json({ suggestion: "You've spent more than you earned this month. Review your non-essential spending." })
+    if (topCategory) return res.json({ suggestion: `Try to reduce your spending on ${topCategory[0]} next week.` })
+    return res.json({ suggestion: "You're staying within your means. Consider allocating more to savings." })
 
   } catch (err) {
     next(err)
@@ -170,7 +292,7 @@ router.get('/debt-advice', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
 
         const debtDetails = debts.map(d => 
           `- ${d.lender}: $${d.remaining} (APR: ${d.interestRate}%, Min: $${d.minPayment})`
