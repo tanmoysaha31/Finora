@@ -14,6 +14,10 @@ import FinancialPersonalityQuiz from './pages/FinancialPersonalityQuiz.jsx'
 import IncomeSources from './pages/IncomeSources.jsx'
 import IncomeOpportunities from './pages/IncomeOpportunities.jsx'
 import FinanceKnowledge from './pages/FinanceKnowledge.jsx'
+import Bills from './pages/Bills.jsx'
+import ManageProfile from './pages/ManageProfile.jsx'
+import Notifications from './pages/Notifications.jsx'
+import PredictiveScenarios from './pages/PredictiveScenarios.jsx'
 
 export default function App() {
   return (
@@ -23,6 +27,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<ManageProfile />} />
         <Route path="/addnewexpense" element={<AddNewExpense />} />
         <Route path="/add-expense" element={<AddNewExpense />} />
         <Route path="/budget" element={<BudgetPlanner />} />
@@ -36,7 +41,10 @@ export default function App() {
         <Route path="/income-opportunities" element={<IncomeOpportunities />} />
         <Route path="/finance-knowledge" element={<FinanceKnowledge />} />
         <Route path="/transactions" element={<Transactions />} />
-        </Routes>
+        <Route path="/bills" element={<Bills />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/predict" element={<PredictiveScenarios />} />
+      </Routes>
     </BrowserRouter>
   )
 }

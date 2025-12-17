@@ -21,7 +21,8 @@ const debtSchema = new mongoose.Schema(
     dueDate: { type: Date },
     color: { type: String },
     icon: { type: String },
-    history: { type: [paymentSchema], default: [] }
+    history: { type: [paymentSchema], default: [] },
+    reminders: { type: [Number], default: [] } // Custom reminder days before due date
   },
   { timestamps: true }
 )

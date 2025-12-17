@@ -14,7 +14,7 @@ export default function SavingsGoals() {
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [modalStep, setModalStep] = useState(1);
-  const [newGoal, setNewGoal] = useState({ type: '', title: '', targetAmount: '', savedAmount: '', deadline: '', icon: '' });
+  const [newGoal, setNewGoal] = useState({ type: '', title: '', targetAmount: '', savedAmount: '', deadline: '', icon: '', reminders: [] });
 
   // Add Funds Modal State
   const [showFundModal, setShowFundModal] = useState(false);
@@ -396,6 +396,32 @@ export default function SavingsGoals() {
                                 <div><label className="block text-xs font-medium text-gray-400 mb-1">Saved ($)</label><input type="number" value={newGoal.savedAmount} onChange={(e) => setNewGoal({...newGoal, savedAmount: e.target.value})} className="w-full glass-input rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500" placeholder="0" /></div>
                             </div>
                             <div><label className="block text-xs font-medium text-gray-400 mb-1">Deadline</label><input type="date" value={newGoal.deadline} onChange={(e) => setNewGoal({...newGoal, deadline: e.target.value})} className="w-full glass-input rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500" /></div>
+                            
+                            {/* Custom Reminders */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-2">Custom Reminders (days before deadline)</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[1, 3, 7, 14, 30].map(day => (
+                                        <button 
+                                            key={day} 
+                                            onClick={() => {
+                                                const current = newGoal.reminders || [];
+                                                const updated = current.includes(day) 
+                                                    ? current.filter(d => d !== day) 
+                                                    : [...current, day];
+                                                setNewGoal({...newGoal, reminders: updated});
+                                            }}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                                                (newGoal.reminders || []).includes(day)
+                                                ? 'bg-purple-500 border-purple-500 text-white'
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            {day} Days
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
                     {modalStep === 3 && (

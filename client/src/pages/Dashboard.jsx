@@ -13,6 +13,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   
+  // Notification State
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // Search & Filter State
   const [search, setSearch] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -24,6 +29,10 @@ export default function Dashboard() {
     maxAmount: ''
   });
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+
+  // Expense Modal State
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [newExpense, setNewExpense] = useState({ title: '', amount: '', category: 'Others', date: new Date().toISOString().split('T')[0] });
 
   // --- UTILITIES ---
   const formatCurrency = (amount) => {
@@ -97,6 +106,38 @@ export default function Dashboard() {
     }
   };
 
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (!newExpense.title || !newExpense.amount) return;
+
+    try {
+      const userId = localStorage.getItem('finora_user_id');
+      const res = await fetch(`${API_BASE}/api/expenses/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newExpense, userId })
+      });
+      const result = await res.json();
+      if (result.success) {
+        // Refresh dashboard data
+        const loadDashboard = async () => {
+          try {
+            const res = await fetch(`${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}`);
+            const newData = await res.json();
+            setData(newData);
+          } catch (err) {
+            console.error("Failed to reload dashboard", err);
+          }
+        };
+        loadDashboard();
+        setShowExpenseModal(false);
+        setNewExpense({ title: '', amount: '', category: 'Others', date: new Date().toISOString().split('T')[0] });
+      }
+    } catch (err) {
+      console.error("Failed to add expense", err);
+    }
+  };
+
   // --- FILTER LOGIC ---
   // Calculate active filters count
   useEffect(() => {
@@ -141,6 +182,47 @@ export default function Dashboard() {
     setFilters({ category: '', startDate: '', endDate: '', minAmount: '', maxAmount: '' });
     setShowAdvancedSearch(false);
   };
+
+  // --- NOTIFICATION LOGIC ---
+  const fetchNotifications = async () => {
+    try {
+      const userId = localStorage.getItem('finora_user_id');
+      if (!userId) return;
+      const res = await fetch(`${API_BASE}/api/notifications?userId=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      if (data.notifications) {
+        setNotifications(data.notifications);
+        setUnreadCount(data.notifications.filter(n => !n.isRead).length);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await fetch(`${API_BASE}/api/notifications/${id}/read`, { method: 'PUT' });
+      const updatedNotifications = notifications.map(n => n._id === id ? {...n, isRead: true} : n);
+      setNotifications(updatedNotifications);
+      setUnreadCount(updatedNotifications.filter(n => !n.isRead).length);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    try {
+      const userId = localStorage.getItem('finora_user_id');
+      await fetch(`${API_BASE}/api/notifications/clear-read?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
+      setNotifications(notifications.filter(n => !n.isRead));
+    } catch (err) {
+      console.error("Failed to clear read notifications", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -312,11 +394,22 @@ export default function Dashboard() {
             <Link to="/debt" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-chart-simple w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Debt Tracker</span>
             </Link>
-            <Link to="/payments" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
-              <i className="fa-regular fa-credit-card w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Payments</span>
+            <Link to="/bills" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-regular fa-calendar-check w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Bills & Reminders</span>
+            </Link>
+            <Link to="/notifications" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-bell w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Notifications</span>
             </Link>
             <Link to="/cards" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-wallet w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>My Cards</span>
+            </Link>
+
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-6 px-3">Advanced Insights</p>
+            <Link to="/predict" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-wand-magic-sparkles w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Predictive Scenarios</span>
+            </Link>
+            <Link to="/finance-knowledge" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-lightbulb w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Finance Knowledge</span>
             </Link>
           </nav>
         </div>
@@ -492,12 +585,74 @@ export default function Dashboard() {
               <i className="fa-solid fa-lightbulb text-base relative z-10 group-hover:rotate-12 transition-transform duration-300"></i>
               <span className="text-sm relative z-10 tracking-wide">Finance Knowledge</span>
             </Link>
-            <button className="w-11 h-11 rounded-full bg-[#242424] border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-purple-500/30 transition-all relative flex items-center justify-center group">
-              <i className="fa-solid fa-bell group-hover:animate-swing"></i>
-              <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#242424] shadow-sm"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="w-11 h-11 rounded-full bg-[#242424] border border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-purple-500/30 transition-all relative flex items-center justify-center group"
+              >
+                <i className="fa-solid fa-bell group-hover:animate-swing"></i>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#242424] shadow-sm animate-pulse"></span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 md:w-96 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
+                  <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                    <h4 className="font-bold text-white text-sm">Notifications</h4>
+                    {notifications.some(n => n.isRead) && (
+                      <button onClick={clearReadNotifications} className="text-[10px] text-gray-400 hover:text-white transition-colors">
+                        Clear Read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto custom-scroll">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-500 text-sm">
+                        <i className="fa-regular fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                        <p>No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n._id} 
+                          onClick={() => !n.isRead && markAsRead(n._id)}
+                          className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer relative group ${!n.isRead ? 'bg-purple-500/5' : ''}`}
+                        >
+                          {!n.isRead && <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500"></div>}
+                          <div className="flex gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              n.type === 'bill' ? 'bg-red-500/20 text-red-400' : 
+                              n.type === 'debt' ? 'bg-orange-500/20 text-orange-400' :
+                              n.type === 'goal' ? 'bg-green-500/20 text-green-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              <i className={`fa-solid ${
+                                n.type === 'bill' ? 'fa-file-invoice-dollar' : 
+                                n.type === 'debt' ? 'fa-hand-holding-dollar' :
+                                n.type === 'goal' ? 'fa-bullseye' :
+                                'fa-bell'
+                              } text-xs`}></i>
+                            </div>
+                            <div>
+                              <p className={`text-sm font-semibold mb-1 ${!n.isRead ? 'text-white' : 'text-gray-400'}`}>{n.title}</p>
+                              <p className="text-xs text-gray-500 leading-relaxed">{n.message}</p>
+                              <p className="text-[10px] text-gray-600 mt-2">{formatDate(n.date)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="p-3 border-t border-white/5 bg-white/5 text-center">
+                    <Link to="/notifications" className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors">View All Notifications</Link>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="h-8 w-[1px] bg-white/10 mx-2 hidden sm:block"></div>
-            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <div onClick={() => navigate('/profile')} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="text-right hidden md:block">
                 {loading ? <div className="skeleton h-8 w-24"></div> : (
                   <>
@@ -682,7 +837,7 @@ export default function Dashboard() {
                             <span className="text-xs text-gray-400 group-hover:text-white font-medium transition-colors">{c.name}</span>
                           </div>
                         ))}
-                        <div className="flex flex-col items-center gap-2 cursor-pointer group min-w-[70px]">
+                        <div onClick={() => setShowExpenseModal(true)} className="flex flex-col items-center gap-2 cursor-pointer group min-w-[70px]">
                           <div className="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-purple-600 group-hover:text-white transition-all hover:rotate-90 duration-300"><i className="fa-solid fa-plus"></i></div>
                           <span className="text-xs text-gray-500 group-hover:text-white transition-colors">Add New</span>
                         </div>
@@ -696,6 +851,85 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      
+      {/* ADD EXPENSE MODAL */}
+      {showExpenseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#1e1e1e] border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Add New Expense</h3>
+              <button onClick={() => setShowExpenseModal(false)} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <form onSubmit={handleAddExpense} className="p-4 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400">Title</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><i className="fa-solid fa-tag text-xs"></i></span>
+                  <input
+                    type="text"
+                    required
+                    value={newExpense.title}
+                    onChange={(e) => setNewExpense({...newExpense, title: e.target.value})}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-gray-600"
+                    placeholder="What did you buy?"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-400">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><i className="fa-solid fa-dollar-sign text-xs"></i></span>
+                  <input
+                    type="number"
+                    required
+                    min="0.01"
+                    step="0.01"
+                    value={newExpense.amount}
+                    onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-gray-600"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-400">Category</label>
+                  <select
+                    value={newExpense.category}
+                    onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors appearance-none"
+                  >
+                    <option value="Food & Dining">Food</option>
+                    <option value="Transportation">Transport</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Health">Health</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-400">Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={newExpense.date}
+                    onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-2.5 px-3 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-purple-900/20 transition-all transform active:scale-[0.98]">
+                  Add Expense
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
