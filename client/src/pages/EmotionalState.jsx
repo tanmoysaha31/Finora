@@ -50,7 +50,7 @@ export default function EmotionalState() {
         if (!id) return; // Handle direct access without ID
         
         // Use your API URL
-        const response = await fetch(`http://localhost:5000/api/transactions/${id}`);
+        const response = await fetch(`http://localhost:1641/api/transactions/${id}`);
         const result = await response.json();
 
         if (result.success && result.data) {
@@ -115,7 +115,7 @@ export default function EmotionalState() {
     };
 
     try {
-        const response = await fetch('http://localhost:5000/api/emotions', {
+        const response = await fetch('http://localhost:1641/api/emotions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

@@ -2,6 +2,7 @@ import express from 'express'
 import User from '../models/User.js'
 import Goal from '../models/Goal.js'
 import Transaction from '../models/Transaction.js'
+import { detectAndLogMilestones } from './milestones.js'
 
 const router = express.Router()
 
@@ -121,7 +122,14 @@ router.post('/:id/fund', async (req, res, next) => {
       note: note || 'Goal funding'
     })
 
-    res.status(201).json({ success: true, transactionId: tx._id.toString() })
+    // Automatically detect and log milestones after funding
+    const newMilestones = await detectAndLogMilestones(id)
+
+    res.status(201).json({ 
+      success: true, 
+      transactionId: tx._id.toString(),
+      milestonesAchieved: newMilestones.length
+    })
   } catch (err) {
     next(err)
   }

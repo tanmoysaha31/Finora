@@ -6,7 +6,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:1641';
   
   // State Management
   const [data, setData] = useState(null);
@@ -16,6 +16,17 @@ export default function Dashboard() {
   const [savingsSuggestions, setSavingsSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsPeriod, setSuggestionsPeriod] = useState('monthly');
+  
+  // Advanced Search & Filter State
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [filters, setFilters] = useState({
+    category: '',
+    startDate: '',
+    endDate: '',
+    minAmount: '',
+    maxAmount: ''
+  });
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // --- Utility Functions (Ported from HTML Script) ---
   const formatCurrency = (amount) => {
@@ -39,32 +50,54 @@ export default function Dashboard() {
   const getIconForCategory = (category) => {
     const map = {
       food: 'fa-burger',
+      'food & dining': 'fa-burger',
       transport: 'fa-car',
+      transportation: 'fa-car',
       shopping: 'fa-bag-shopping',
       entertainment: 'fa-film',
       utility: 'fa-bolt',
+      utilities: 'fa-bolt',
       salary: 'fa-money-bill-wave',
-      tech: 'fa-laptop-code'
+      income: 'fa-money-bill-wave',
+      tech: 'fa-laptop-code',
+      health: 'fa-heart-pulse',
+      others: 'fa-ellipsis'
     };
     return map[(category || '').toLowerCase()] || 'fa-circle-dollar-to-slot';
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
+    localStorage.removeItem('finora_token');
+    localStorage.removeItem('finora_user_id');
     navigate('/login');
   };
 
   const handleDeleteTransaction = async (id) => {
     try {
-      const r = await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' })
-      if (!r.ok) return
-      let userId = null
-      try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
-      const url = userId ? `${API_BASE}/api/dashboard?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/dashboard`
-      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
-      const payload = await res.json()
-      if (res.ok && payload?.user) setData(payload)
-    } catch (_) {}
+      const r = await fetch(`${API_BASE}/api/transactions/${id}`, { method: 'DELETE' });
+      if (r.ok) {
+        const response = await r.json();
+        const deletedAmount = response.amount || 0;
+        
+        // Filter out the deleted transaction
+        const updatedTransactions = data.transactions.filter(t => t.id !== id);
+        
+        // Recalculate balance
+        const newBalance = data.user.totalBalance - deletedAmount;
+        
+        // Update data with new transactions and balance
+        setData({ 
+          ...data, 
+          transactions: updatedTransactions,
+          user: {
+            ...data.user,
+            totalBalance: Number(newBalance.toFixed(2))
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete", err);
+    }
   }
 
   // --- 1. Data Fetching Effect (Server) ---
@@ -124,6 +157,25 @@ export default function Dashboard() {
     if (userId) {
       loadSavingsSuggestions(userId, period);
     }
+  };
+
+  // --- FILTER LOGIC ---
+  // Calculate active filters count
+  useEffect(() => {
+    let count = 0;
+    if (search) count++;
+    if (filters.category) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    if (filters.minAmount) count++;
+    if (filters.maxAmount) count++;
+    setActiveFiltersCount(count);
+  }, [search, filters]);
+
+  const resetFilters = () => {
+    setSearch('');
+    setFilters({ category: '', startDate: '', endDate: '', minAmount: '', maxAmount: '' });
+    setShowAdvancedSearch(false);
   };
 
   // --- 2. Chart Rendering Effect ---
@@ -216,12 +268,32 @@ export default function Dashboard() {
     };
   }, [data]);
 
-  // Filter Transactions Logic
-  const filteredTransactions = data?.transactions?.filter(t => {
-    if (!search) return true;
-    const query = search.toLowerCase();
-    return t.title.toLowerCase().includes(query) || t.category.toLowerCase().includes(query);
-  }) || [];
+  // Filter Transactions Logic with Advanced Filters
+  const filteredTransactions = (data?.transactions || []).filter(t => {
+    const query = search.toLowerCase().trim();
+    const matchesSearch = !query || t.title.toLowerCase().includes(query) || t.category.toLowerCase().includes(query);
+    
+    const matchesCategory = !filters.category || t.category.toLowerCase() === filters.category.toLowerCase();
+    
+    let matchesDate = true;
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      matchesDate = matchesDate && new Date(t.date) >= startDate;
+    }
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      matchesDate = matchesDate && new Date(t.date) <= end;
+    }
+
+    let matchesAmount = true;
+    const absAmount = Math.abs(t.amount);
+    if (filters.minAmount !== '') matchesAmount = matchesAmount && absAmount >= Number(filters.minAmount);
+    if (filters.maxAmount !== '') matchesAmount = matchesAmount && absAmount <= Number(filters.maxAmount);
+
+    return matchesSearch && matchesCategory && matchesDate && matchesAmount;
+  });
 
   // --- Styles from HTML (Ported) ---
   const customStyles = `
@@ -486,7 +558,7 @@ export default function Dashboard() {
         </header>
 
         {/* DASHBOARD SCROLLABLE AREA */}
-        <main className="flex-1 overflow-hidden p-2 md:p-3 custom-scroll min-h-0">
+        <main className="flex-1 overflow-y-auto p-2 md:p-3 custom-scroll min-h-0">
           <div className="max-w-7xl mx-auto h-full flex flex-col min-h-0">
               
             {/* Main Grid Layout */}
@@ -616,7 +688,12 @@ export default function Dashboard() {
                         <div className="bg-[#242424] h-full min-h-[60px] rounded-lg skeleton opacity-50"></div>
                       </>
                     ) : (
-                      data?.goals?.map(goal => (
+                      (data?.goals && data.goals.length > 0 ? data.goals : [
+                        { id: '1', title: 'Emergency Fund', current: 1200, target: 5000, items: 'Build safety net', icon: 'fa-shield', bg: 'bg-emerald-600' },
+                        { id: '2', title: 'Vacation Fund', current: 800, target: 2500, items: 'Dream destination', icon: 'fa-plane', bg: 'bg-blue-600' },
+                        { id: '3', title: 'New Laptop', current: 400, target: 1500, items: 'Upgrade tech', icon: 'fa-laptop', bg: 'bg-indigo-600' },
+                        { id: '4', title: 'Wedding Savings', current: 3000, target: 10000, items: 'Special day fund', icon: 'fa-ring', bg: 'bg-rose-600' }
+                      ]).map(goal => (
                         <div key={goal.id} className="bg-white text-gray-900 rounded-lg p-1.5 flex justify-between items-center shadow-lg hover-lift cursor-pointer group h-full relative overflow-hidden min-h-[60px]">
                           {/* Background Pattern */}
                           <div className="absolute -right-2 -bottom-2 opacity-5 text-3xl md:text-4xl select-none pointer-events-none">

@@ -13,6 +13,7 @@ import emotionsRouter from './routes/emotions.js'
 import incomeRouter from './routes/income.js'
 import transactionsRouter from './routes/transactions.js'
 import savingsRouter from './routes/savings.js'
+import milestonesRouter from './routes/milestones.js'
 import { errorHandler } from './middlewares/error.js'
 
 dotenv.config()
@@ -34,6 +35,7 @@ app.use('/api/emotions', emotionsRouter)
 app.use('/api/income', incomeRouter)
 app.use('/api/transactions', transactionsRouter)
 app.use('/api/savings', savingsRouter)
+app.use('/api/milestones', milestonesRouter)
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')
@@ -41,7 +43,7 @@ app.use(express.static(repoRoot))
 
 app.use(errorHandler)
 
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 1641
 app.listen(port, () => {
   console.log(`API server running on http://localhost:${port}`)
 })

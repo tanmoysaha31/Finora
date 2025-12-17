@@ -103,7 +103,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('add-expense');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:1641'
   const [dashboardBalance, setDashboardBalance] = useState(0)
 
   // --- STATE MANAGEMENT (MERN READY) ---

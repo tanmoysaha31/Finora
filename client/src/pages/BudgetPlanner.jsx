@@ -6,7 +6,7 @@ export default function BudgetPlanner() {
   const navigate = useNavigate()
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:1641'
   const [loading, setLoading] = useState(false)
   const [pageReady, setPageReady] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
