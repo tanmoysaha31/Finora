@@ -14,30 +14,6 @@ export default function FinancialPersonalityQuiz() {
   const [result, setResult] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Check for previous results on load
-  useEffect(() => {
-    const fetchLatest = async () => {
-      const userId = localStorage.getItem('finora_user_id');
-      if (!userId) return;
-      try {
-        const res = await fetch(`/api/quiz/latest?userId=${userId}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.hasResult) {
-            setResult({
-              ...data.details,
-              scores: data.scores
-            });
-            setGameState('result');
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load previous quiz", e);
-      }
-    };
-    fetchLatest();
-  }, []);
-
   // --- MOCK DB: QUESTIONS ---
   // Designed to measure: Discipline, Risk Tolerance, Knowledge, Mindfulness
   const questions = [
@@ -195,37 +171,26 @@ export default function FinancialPersonalityQuiz() {
     }
   };
 
-  const finishQuiz = async (finalAnswers) => {
+  const finishQuiz = (finalAnswers) => {
     setGameState('analyzing');
     
-    try {
-      const userId = localStorage.getItem('finora_user_id');
+    // Simulate AI Processing
+    setTimeout(() => {
+      // Simple Logic to determine persona based on highest traits
+      let personaKey = 'balanced_realist';
+      const { discipline = 0, risk = 0, knowledge = 0 } = finalAnswers;
+
+      if (discipline > 60 && risk < 30) personaKey = 'cautious_guardian';
+      else if (discipline > 60 && knowledge > 50) personaKey = 'wealth_architect';
+      else if (risk > 50 && knowledge > 40) personaKey = 'savvy_investor';
+      else if (discipline < 30) personaKey = 'spontaneous_spender';
       
-      // Send to server
-      const response = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, traits: finalAnswers })
+      setResult({
+        ...personalities[personaKey],
+        scores: finalAnswers
       });
-
-      if (!response.ok) throw new Error('Failed to calculate results');
-      const data = await response.json();
-
-      // Artificial delay for "Analyzing" animation feel
-      setTimeout(() => {
-        setResult({
-          ...data.details,
-          scores: data.scores
-        });
-        setGameState('result');
-      }, 2000);
-
-    } catch (error) {
-      console.error("Quiz Error:", error);
-      // Fallback if server fails (keep local logic or show error)
-      alert("Could not save results. Please check your connection.");
-      setGameState('start');
-    }
+      setGameState('result');
+    }, 2500);
   };
 
   // --- CHART RENDERING (Results Page) ---
@@ -449,15 +414,7 @@ export default function FinancialPersonalityQuiz() {
         </div>
 
         <div className="text-center mt-12">
-            <button 
-                onClick={() => {
-                    setGameState('start');
-                    setCurrentQIndex(0);
-                    setAnswers({});
-                    setResult(null);
-                }} 
-                className="text-gray-500 hover:text-white transition-colors text-sm underline"
-            >
+            <button onClick={() => window.location.reload()} className="text-gray-500 hover:text-white transition-colors text-sm underline">
                 Retake Quiz
             </button>
         </div>

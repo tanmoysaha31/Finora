@@ -60,7 +60,7 @@ export default function Income() {
         })
 
         // Fetch AI Suggestion
-        const aiUrl = userId ? `${API_BASE}/api/ai/income-advice?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/ai/income-advice`
+        const aiUrl = userId ? `${API_BASE}/api/ai/goal-booster?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/ai/goal-booster`
         const aiRes = await fetch(aiUrl)
         const aiData = await aiRes.json()
         if (aiData?.suggestion) {
@@ -416,10 +416,10 @@ export default function Income() {
                     <div className="glass-panel rounded-3xl p-6 border-l-4 border-emerald-500">
                         <div className="flex items-center gap-2 mb-3">
                              <i className="fa-solid fa-rocket text-emerald-400"></i>
-                             <h4 className="font-bold text-sm text-white">Income Insight (AI)</h4>
+                             <h4 className="font-bold text-sm text-white">Goal Booster (AI Powered)</h4>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed mb-3">
-                            {aiSuggestion || "Analyzing your income patterns to provide smart suggestions..."}
+                            {aiSuggestion || "Analyzing your income patterns to provide smart goal suggestions..."}
                         </p>
                         {formData.amount && (
                             <div className="bg-emerald-500/10 rounded-xl p-3 flex justify-between items-center border border-emerald-500/20">

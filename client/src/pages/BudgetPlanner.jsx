@@ -16,7 +16,6 @@ export default function BudgetPlanner() {
   const [monthlyIncome, setMonthlyIncome] = useState(0)
   const [categories, setCategories] = useState([])
   const [stats, setStats] = useState({ totalBudgeted: 0, totalSpent: 0, remainingBudget: 0, unallocatedIncome: 0 })
-  const [aiAdvice, setAiAdvice] = useState('')
 
   useEffect(() => {
     const budgeted = categories.reduce((acc, cat) => acc + (parseFloat(cat.limit) || 0), 0)
@@ -52,22 +51,7 @@ export default function BudgetPlanner() {
         setLoading(false)
       }
     }
-
-    const fetchAiAdvice = async () => {
-      try {
-        let userId = null
-        try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
-        const url = userId ? `${API_BASE}/api/ai/budget-advice?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/ai/budget-advice`
-        const res = await fetch(url)
-        const data = await res.json()
-        if (data?.suggestion) setAiAdvice(data.suggestion)
-      } catch (e) {
-        console.error("AI Fetch Error:", e)
-      }
-    }
-
     loadBudget()
-    fetchAiAdvice()
   }, [])
 
   useEffect(() => {
@@ -206,21 +190,6 @@ export default function BudgetPlanner() {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-            {/* AI Advisor Panel */}
-            {aiAdvice && (
-              <div className="max-w-7xl mx-auto mb-6">
-                <div className="glass-panel rounded-2xl p-4 border-l-4 border-purple-500 flex items-start gap-4 animate-fade-up">
-                  <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400 mt-1">
-                    <i className="fa-solid fa-robot"></i>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-purple-300 mb-1">AI Budget Insight</h3>
-                    <p className="text-sm text-gray-300 leading-relaxed">{aiAdvice}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2 space-y-6">
                     <div className="glass-panel rounded-3xl p-6 relative overflow-hidden">
