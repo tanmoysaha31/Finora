@@ -102,7 +102,7 @@ router.get('/goal-booster', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const prompt = `
           Context: Financial app "Finora".
@@ -158,7 +158,7 @@ router.get('/income-advice', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const prompt = `
           Context: Financial app "Finora".
@@ -177,7 +177,7 @@ router.get('/income-advice', async (req, res, next) => {
         
         return res.json({ suggestion: text, source: 'gemini' })
       } catch (aiError) {
-        console.error('Gemini API Error:', aiError.message)
+        console.error('Gemini API Error (Income):', aiError.message)
       }
     }
 
@@ -225,7 +225,7 @@ router.get('/budget-advice', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const prompt = `
           Context: Financial app "Finora".
@@ -292,7 +292,7 @@ router.get('/debt-advice', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
         const debtDetails = debts.map(d => 
           `- ${d.lender}: $${d.remaining} (APR: ${d.interestRate}%, Min: $${d.minPayment})`
