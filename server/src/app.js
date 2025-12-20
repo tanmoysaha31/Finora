@@ -12,6 +12,7 @@ import goalsRouter from './routes/goals.js'
 import emotionsRouter from './routes/emotions.js'
 import incomeRouter from './routes/income.js'
 import transactionsRouter from './routes/transactions.js'
+<<<<<<< HEAD
 import debtsRouter from './routes/debts.js'
 import aiRouter from './routes/ai.js'
 import quizRouter from './routes/quiz.js'
@@ -21,6 +22,10 @@ import billsRouter from './routes/bills.js'
 import savingsRouter from './routes/savings.js'
 import incomeOpportunitiesRouter from './routes/incomeOpportunities.js'
 import emailParserRouter from './routes/emailParser.js'
+=======
+import savingsRouter from './routes/savings.js'
+import milestonesRouter from './routes/milestones.js'
+>>>>>>> origin/module2_2
 import { errorHandler } from './middlewares/error.js'
 
 dotenv.config()
@@ -41,6 +46,7 @@ app.use('/api/goals', goalsRouter)
 app.use('/api/emotions', emotionsRouter)
 app.use('/api/income', incomeRouter)
 app.use('/api/transactions', transactionsRouter)
+<<<<<<< HEAD
 app.use('/api/debts', debtsRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/quiz', quizRouter)
@@ -50,6 +56,10 @@ app.use('/api/bills', billsRouter)
 app.use('/api/savings', savingsRouter)
 app.use('/api/income-opportunities', incomeOpportunitiesRouter)
 app.use('/api/email-parser', emailParserRouter)
+=======
+app.use('/api/savings', savingsRouter)
+app.use('/api/milestones', milestonesRouter)
+>>>>>>> origin/module2_2
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')
@@ -57,7 +67,7 @@ app.use(express.static(repoRoot))
 
 app.use(errorHandler)
 
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 1641
 app.listen(port, () => {
   console.log(`API server running on http://localhost:${port}`)
 })
