@@ -13,7 +13,8 @@ const goalSchema = new mongoose.Schema(
     type: { type: String },
     deadline: { type: Date },
     color: { type: String },
-    shadow: { type: String }
+    shadow: { type: String },
+    reminders: { type: [Number], default: [] } // Custom reminder days before deadline
   },
   { timestamps: true }
 )

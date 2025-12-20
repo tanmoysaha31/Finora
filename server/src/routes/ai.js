@@ -102,7 +102,8 @@ router.get('/goal-booster', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        // Using 'gemini-flash-latest' as it is confirmed available in your model list
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
 
         const prompt = `
           Context: Financial app "Finora".
@@ -292,9 +293,9 @@ router.get('/debt-advice', async (req, res, next) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
 
-        const debtDetails = debts.map(d => 
+        const debtDetails = debts.map(d =>   
           `- ${d.lender}: $${d.remaining} (APR: ${d.interestRate}%, Min: $${d.minPayment})`
         ).join('\n')
 
@@ -335,6 +336,89 @@ router.get('/debt-advice', async (req, res, next) => {
       advice: fallbackAdvice, 
       source: 'rule-based' 
     })
+
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Predictive Scenarios Endpoint
+router.post('/predict', async (req, res, next) => {
+  try {
+    const { userId, query } = req.body
+    if (!query) return res.status(400).json({ error: 'Query is required' })
+
+    const user = await ensureUser(userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    // 1. Gather comprehensive context
+    const [incomes, transactions, goals, debts] = await Promise.all([
+      Income.find({ userId: user._id }),
+      Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50), // Last 50 transactions
+      Goal.find({ userId: user._id }),
+      Debt.find({ userId: user._id })
+    ])
+
+    // Calculate Summaries
+    const totalDebt = debts.reduce((sum, d) => sum + Number(d.remaining), 0)
+    const monthlyDebtPayments = debts.reduce((sum, d) => sum + Number(d.minPayment), 0)
+    
+    // Average Monthly Income (simplified)
+    const now = new Date()
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const monthlyIncome = incomes
+      .filter(i => new Date(i.date) >= lastMonth) // Rough estimate using recent income
+      .reduce((sum, i) => sum + Number(i.amount), 0) || 
+      incomes.reduce((sum, i) => sum + Number(i.amount), 0) / (incomes.length || 1) // Fallback to average
+
+    // Average Monthly Expenses
+    const monthlyExpenses = transactions
+      .filter(t => t.amount < 0 && new Date(t.date) >= lastMonth)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+    const goalDetails = goals.map(g => `${g.title} (Target: ${g.target}, Saved: ${g.current})`).join(', ')
+    const debtDetails = debts.map(d => `${d.lender} ($${d.remaining} @ ${d.interestRate}%)`).join(', ')
+
+    // 2. Gemini Generation
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
+
+        const prompt = `
+          You are an expert financial advisor AI for the app "Finora".
+          
+          User Financial Profile:
+          - Est. Monthly Income: $${monthlyIncome.toFixed(2)}
+          - Est. Monthly Expenses: $${monthlyExpenses.toFixed(2)}
+          - Total Debt: $${totalDebt.toFixed(2)} (Breakdown: ${debtDetails || 'None'})
+          - Goals: ${goalDetails || 'None'}
+          
+          User Question/Scenario: "${query}"
+          
+          Task: Analyze the scenario based on the user's profile. Predict the outcome or impact.
+          
+          Guidelines:
+          - Be specific with numbers where possible.
+          - If the user asks "What if I save X more", calculate the impact on goals/debt.
+          - If the user asks "What if I pay off X debt", calculate interest savings or timeline changes.
+          - Keep the tone encouraging but realistic.
+          - Limit response to 3-4 clear sentences.
+          - Do not use markdown formatting (bold/italic), just plain text.
+        `
+
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const text = response.text().trim()
+
+        return res.json({ prediction: text, source: 'gemini' })
+      } catch (aiError) {
+        console.error('Gemini API Error:', aiError.message)
+        return res.status(503).json({ error: 'AI Service temporarily unavailable', details: aiError.message })
+      }
+    } else {
+      return res.status(503).json({ error: 'AI Service not configured' })
+    }
 
   } catch (err) {
     next(err)

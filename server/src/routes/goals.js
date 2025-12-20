@@ -27,7 +27,8 @@ router.get('/', async (req, res, next) => {
       icon: g.icon || 'fa-star',
       type: g.type,
       color: g.color,
-      shadow: g.shadow
+      shadow: g.shadow,
+      reminders: g.reminders || []
     }))
     res.json({ goals: payload })
   } catch (err) {
@@ -37,7 +38,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { userId, title, targetAmount, savedAmount, deadline, icon, type, color, shadow } = req.body || {}
+    const { userId, title, targetAmount, savedAmount, deadline, icon, type, color, shadow, reminders } = req.body || {}
     if (!title || !targetAmount) return res.status(400).json({ error: 'Title and targetAmount required' })
     const user = await ensureUser(userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -50,7 +51,8 @@ router.post('/', async (req, res, next) => {
       icon,
       type,
       color,
-      shadow
+      shadow,
+      reminders: Array.isArray(reminders) ? reminders.map(Number) : []
     })
     res.status(201).json({ id: goal._id.toString() })
   } catch (err) {
@@ -61,7 +63,7 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params
-    const { title, targetAmount, savedAmount, deadline, icon, type, color, shadow } = req.body || {}
+    const { title, targetAmount, savedAmount, deadline, icon, type, color, shadow, reminders } = req.body || {}
     const update = {}
     if (title !== undefined) update.title = title
     if (targetAmount !== undefined) update.target = Number(targetAmount)
@@ -71,6 +73,7 @@ router.put('/:id', async (req, res, next) => {
     if (type !== undefined) update.type = type
     if (color !== undefined) update.color = color
     if (shadow !== undefined) update.shadow = shadow
+    if (reminders !== undefined) update.reminders = Array.isArray(reminders) ? reminders.map(Number) : []
     await Goal.findByIdAndUpdate(id, { $set: update })
     res.json({ success: true })
   } catch (err) {

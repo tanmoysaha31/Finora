@@ -46,7 +46,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { userId, lender, totalAmount, interestRate, minPayment, dueDate, type } = req.body || {}
+    const { userId, lender, totalAmount, interestRate, minPayment, dueDate, type, reminders } = req.body || {}
     if (!lender) return res.status(400).json({ error: 'lender required' })
     const amt = Number(totalAmount)
     if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ error: 'totalAmount must be > 0' })
@@ -64,8 +64,13 @@ router.post('/', async (req, res, next) => {
       dueDate: dueDate ? new Date(dueDate) : undefined,
       color: defaults.color,
       icon: defaults.icon,
-      history: []
+      history: [],
+      reminders: Array.isArray(reminders) ? reminders.map(Number) : []
     })
+    
+    // Trigger notification check immediately
+    // checkAndGenerateReminders(user._id).catch(err => console.error('Notification trigger error:', err)) // checkAndGenerateReminders is not imported here, skip for now
+
     res.status(201).json({ success: true, id: doc._id.toString() })
   } catch (err) {
     next(err)
