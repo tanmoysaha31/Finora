@@ -817,6 +817,31 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* INCOME OPPORTUNITIES - NEW */}
+                <div className="glass-panel rounded-3xl p-3 md:p-4 flex-shrink-0">
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <h3 className="text-lg md:text-xl font-bold text-white">💼 Earn More</h3>
+                      <p className="text-xs text-gray-500">New income opportunities</p>
+                    </div>
+                    <Link to="/income-opportunities" className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">View All</Link>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-xl p-3 hover:scale-105 transition-transform cursor-pointer" onClick={() => navigate('/income-opportunities')}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center text-white flex-shrink-0">
+                          <i className="fa-solid fa-briefcase text-sm"></i>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-white">Discover Gigs</h4>
+                          <p className="text-xs text-gray-400">Find opportunities matched to your skills</p>
+                        </div>
+                        <i className="fa-solid fa-arrow-right text-purple-400"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* FREQUENT PAYS */}
                 <div className="glass-panel rounded-3xl p-3 md:p-4 flex-shrink-0">
                   <div className="flex justify-between items-center mb-2">

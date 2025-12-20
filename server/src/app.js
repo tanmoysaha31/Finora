@@ -18,6 +18,9 @@ import quizRouter from './routes/quiz.js'
 import knowledgeRouter from './routes/knowledge.js'
 import notificationsRouter from './routes/notifications.js'
 import billsRouter from './routes/bills.js'
+import savingsRouter from './routes/savings.js'
+import incomeOpportunitiesRouter from './routes/incomeOpportunities.js'
+import emailParserRouter from './routes/emailParser.js'
 import { errorHandler } from './middlewares/error.js'
 
 dotenv.config()
@@ -44,6 +47,9 @@ app.use('/api/quiz', quizRouter)
 app.use('/api/knowledge', knowledgeRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/bills', billsRouter)
+app.use('/api/savings', savingsRouter)
+app.use('/api/income-opportunities', incomeOpportunitiesRouter)
+app.use('/api/email-parser', emailParserRouter)
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')
