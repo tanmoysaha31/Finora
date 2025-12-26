@@ -16,6 +16,8 @@ import debtsRouter from './routes/debts.js'
 import aiRouter from './routes/ai.js'
 import notificationsRouter from './routes/notifications.js'
 import billsRouter from './routes/bills.js'
+import quizRouter from './routes/quiz.js'
+import knowledgeRouter from './routes/knowledge.js'
 import { errorHandler } from './middlewares/error.js'
 
 dotenv.config()
@@ -40,6 +42,8 @@ app.use('/api/debts', debtsRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/bills', billsRouter)
+app.use('/api/quiz', quizRouter)
+app.use('/api/knowledge', knowledgeRouter)
 
 // Serve repo-root assets for images (logo.png, login2.png)
 const repoRoot = path.join(__dirname, '../../')
