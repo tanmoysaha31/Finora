@@ -326,6 +326,23 @@ export default function Dashboard() {
     /* Animation for Advanced Search Panel */
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* Button Gradient Animation */
+    .animate-gradient {
+      background-size: 200% auto;
+      animation: gradientMove 3s ease infinite;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Custom Scrollbar for Sidebar */
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #444; }
   `;
 
   return (
@@ -339,8 +356,10 @@ export default function Dashboard() {
 
       {/* SIDEBAR */}
       <aside className={`w-72 flex-shrink-0 lg:flex flex-col justify-between p-6 border-r border-white/5 bg-[#1a1a1a]/95 backdrop-blur-xl fixed h-full z-40 transition-all duration-300 ${mobileOpen ? 'flex' : 'hidden'}`}>
+        
+        {/* FIXED HEADER (Logo + Balance) */}
         <div>
-          <div className="flex items-center gap-3 mb-10 px-2">
+          <div className="flex items-center gap-3 mb-10 px-2 mt-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
               <i className="fa-solid fa-bolt"></i>
             </div>
@@ -370,8 +389,11 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
 
-          <nav className="space-y-1">
+        {/* SCROLLABLE MENU */}
+        <div className="flex-1 overflow-y-auto custom-scroll -mx-4 px-4">
+          <nav className="space-y-1 pb-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-3">Main Menu</p>
             <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white/10 text-white font-medium border-l-4 border-purple-500 shadow-inner transition-all group">
               <i className="fa-solid fa-grid-2 w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Dashboard</span>
@@ -404,6 +426,7 @@ export default function Dashboard() {
               <i className="fa-solid fa-wallet w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>My Cards</span>
             </Link>
 
+            {/* NEW SECTION: ADVANCED INSIGHTS */}
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-6 px-3">Advanced Insights</p>
             <Link to="/predict" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-wand-magic-sparkles w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Predictive Scenarios</span>
@@ -414,8 +437,12 @@ export default function Dashboard() {
           </nav>
         </div>
 
-        <div className="space-y-1">
+        {/* FIXED FOOTER (Preferences) */}
+        <div className="space-y-1 mt-auto pt-4 border-t border-white/5 flex-shrink-0">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">Preferences</p>
+          <Link to="/settings" className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+            <i className="fa-solid fa-gear w-5 text-center"></i> Settings
+          </Link>
           <Link to="/account" className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
             <i className="fa-regular fa-user w-5 text-center"></i> Account
           </Link>
@@ -425,7 +452,6 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* MOBILE HEADER & MAIN CONTENT */}
       <div className="flex-1 lg:ml-72 flex flex-col h-full relative z-10 transition-all duration-300">
         
         {/* HEADER */}
