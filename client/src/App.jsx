@@ -15,7 +15,7 @@ import IncomeSources from './pages/IncomeSources.jsx'
 import IncomeOpportunities from './pages/IncomeOpportunities.jsx'
 import FinanceKnowledge from './pages/FinanceKnowledge.jsx'
 import Bills from './pages/Bills.jsx'
-import ManageProfile from './pages/ManageProfile.jsx'
+import Profile from './pages/profile.jsx'
 import Notifications from './pages/Notifications.jsx'
 import PredictiveScenarios from './pages/PredictiveScenarios.jsx'
 
@@ -27,7 +27,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<ManageProfile />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/account" element={<Profile />} />
+        <Route path="/settings" element={<Profile />} />
         <Route path="/addnewexpense" element={<AddNewExpense />} />
         <Route path="/add-expense" element={<AddNewExpense />} />
         <Route path="/budget" element={<BudgetPlanner />} />

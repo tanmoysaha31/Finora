@@ -624,8 +624,8 @@ export default function Dashboard() {
 
               {/* Notification Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-3 w-80 md:w-96 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
-                  <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <div className="absolute right-0 mt-3 w-80 md:w-96 bg-[#0f0f0f] backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
+                  <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#1a1a1a]">
                     <h4 className="font-bold text-white text-sm">Notifications</h4>
                     {notifications.some(n => n.isRead) && (
                       <button onClick={clearReadNotifications} className="text-[10px] text-gray-400 hover:text-white transition-colors">

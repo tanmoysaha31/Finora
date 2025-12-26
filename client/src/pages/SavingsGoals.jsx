@@ -232,7 +232,7 @@ export default function SavingsGoals() {
             <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/20 hover-lift">
                 <i className="fa-solid fa-plus"></i> <span>New Goal</span>
             </button>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px] cursor-pointer">
+            <div onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px] cursor-pointer hover:opacity-80 transition-opacity">
                <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="User" className="w-full h-full rounded-full object-cover border-2 border-[#1a1a1a]" />
             </div>
           </div>

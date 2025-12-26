@@ -5,6 +5,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
 import authRouter from './routes/auth.js'
+import profileRouter from './routes/profile.js'
 import dashboardRouter from './routes/dashboard.js'
 import expensesRouter from './routes/expenses.js'
 import budgetRouter from './routes/budget.js'
@@ -31,6 +32,7 @@ const __dirname = path.dirname(__filename)
 connectDB()
 
 app.use('/api/auth', authRouter)
+app.use('/api/profile', profileRouter)
 app.use('/api/dashboard', dashboardRouter)
 app.use('/api/expenses', expensesRouter)
 app.use('/api/budget', budgetRouter)
@@ -55,3 +57,4 @@ const port = process.env.PORT || 5000
 app.listen(port, () => {
   console.log(`API server running on http://localhost:${port}`)
 })
+

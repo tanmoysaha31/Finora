@@ -8,10 +8,48 @@ import Debt from '../models/Debt.js'
 
 const router = express.Router()
 
+// --- CONFIGURATION: Reliable Model List ---
+// Prioritizes faster/cheaper models, falls back to legacy/pro if needed.
+const ROBUST_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-1.0-pro',
+  'gemini-pro',
+  'gemini-flash-latest'
+]
+
 async function ensureUser(userId) {
   if (userId) return await User.findById(userId)
   const u = await User.findOne().sort({ createdAt: -1 })
   return u
+}
+
+/**
+ * PRO HELPER: AI Generation with Automatic Fallback
+ * Tries models sequentially until one succeeds.
+ */
+async function generateWithFallback(apiKey, prompt) {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  let lastError = null
+
+  for (const modelName of ROBUST_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      const text = response.text().trim()
+      
+      // If successful, return immediately
+      return { text, model: modelName }
+    } catch (error) {
+      console.warn(`[AI Warning] Model ${modelName} failed: ${error.message}. Trying next...`)
+      lastError = error
+      continue // Try next model
+    }
+  }
+  
+  // If all models fail, throw the last error to be caught by the route handler
+  throw lastError || new Error('All AI models failed to respond.')
 }
 
 // Rule-based fallback generator
@@ -98,13 +136,9 @@ router.get('/goal-booster', async (req, res, next) => {
 
     const goalNames = goals.map(g => g.title).join(', ')
 
-    // 2. Try Gemini AI
+    // 2. Try Gemini AI (Robust Fallback)
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        // Using 'gemini-flash-latest' as it is confirmed available in your model list
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
-
         const prompt = `
           Context: Financial app "Finora".
           User Data (Monthly):
@@ -117,13 +151,12 @@ router.get('/goal-booster', async (req, res, next) => {
           Do not mention "Gemini" or "AI". Be direct and friendly.
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text().trim()
-        
-        return res.json({ suggestion: text, source: 'gemini' })
+        // Uses the new helper function to cycle through models
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        return res.json({ suggestion: text, source: `gemini (${model})` })
+
       } catch (aiError) {
-        console.error('Gemini API Error:', aiError.message)
+        console.error('All AI models failed for goal-booster. Falling back to rules.')
         // Fallback continues below
       }
     }
@@ -155,12 +188,9 @@ router.get('/income-advice', async (req, res, next) => {
     const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0)
     const sources = [...new Set(incomes.map(i => i.source))]
     
-    // AI Generation
+    // AI Generation with graceful model fallback
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' })
-
         const prompt = `
           Context: Financial app "Finora".
           User Data (Last 3 months):
@@ -168,17 +198,15 @@ router.get('/income-advice', async (req, res, next) => {
           - Sources: ${sources.join(', ') || 'None'}
           - Transaction Count: ${incomes.length}
           
-          Task: Give a single, short, specific tip (max 25 words) to help the user increase their income stability or diversity. 
+          Task: Give a single, short, specific tip (max 25 words) to help the user increase their income stability or diversity.
           Be motivating.
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text().trim()
-        
-        return res.json({ suggestion: text, source: 'gemini' })
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        return res.json({ suggestion: text, source: model })
+
       } catch (aiError) {
-        console.error('Gemini API Error (Income):', aiError.message)
+        console.error('All AI models failed for income-advice. Falling back to rules.')
       }
     }
 
@@ -198,11 +226,6 @@ router.get('/budget-advice', async (req, res, next) => {
     const user = await ensureUser(userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
 
-    // Need to fetch budget settings. 
-    // Assuming BudgetPlan model exists or we use local budget data if passed, 
-    // but better to fetch transactions vs income here.
-    // For now, let's look at spending vs income for general budget advice.
-    
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -225,9 +248,6 @@ router.get('/budget-advice', async (req, res, next) => {
     // AI Generation
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' })
-
         const prompt = `
           Context: Financial app "Finora".
           User Data (This Month):
@@ -239,13 +259,11 @@ router.get('/budget-advice', async (req, res, next) => {
           Focus on savings rate or cutting the top expense.
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text().trim()
-        
-        return res.json({ suggestion: text, source: 'gemini' })
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        return res.json({ suggestion: text, source: `gemini (${model})` })
+
       } catch (aiError) {
-        console.error('Gemini API Error:', aiError.message)
+        console.error('All AI models failed for budget-advice. Falling back to rules.')
       }
     }
 
@@ -292,9 +310,6 @@ router.get('/debt-advice', async (req, res, next) => {
     // AI Generation
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
-
         const debtDetails = debts.map(d =>   
           `- ${d.lender}: $${d.remaining} (APR: ${d.interestRate}%, Min: $${d.minPayment})`
         ).join('\n')
@@ -314,18 +329,17 @@ router.get('/debt-advice', async (req, res, next) => {
           Output format JSON: { "projection": "Month Year", "advice": "Your advice here" }
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text().replace(/```json|```/g, '').trim()
-        const json = JSON.parse(text)
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        const cleanText = text.replace(/```json|```/g, '').trim()
+        const json = JSON.parse(cleanText)
         
         return res.json({ 
           projection: json.projection || projectedDate, 
           advice: json.advice, 
-          source: 'gemini' 
+          source: `gemini (${model})` 
         })
       } catch (aiError) {
-        console.error('Gemini API Error:', aiError.message)
+        console.error('All AI models failed for debt-advice. Falling back to rules.')
       }
     }
 
@@ -379,12 +393,9 @@ router.post('/predict', async (req, res, next) => {
     const goalDetails = goals.map(g => `${g.title} (Target: ${g.target}, Saved: ${g.current})`).join(', ')
     const debtDetails = debts.map(d => `${d.lender} ($${d.remaining} @ ${d.interestRate}%)`).join(', ')
 
-    // 2. Gemini Generation
+    // 2. Gemini Generation with Fallback
     if (process.env.GEMINI_API_KEY) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' })
-
         const prompt = `
           You are an expert financial advisor AI for the app "Finora".
           
@@ -407,13 +418,11 @@ router.post('/predict', async (req, res, next) => {
           - Do not use markdown formatting (bold/italic), just plain text.
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text().trim()
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        return res.json({ prediction: text, source: `gemini (${model})` })
 
-        return res.json({ prediction: text, source: 'gemini' })
       } catch (aiError) {
-        console.error('Gemini API Error:', aiError.message)
+        console.error('All AI models failed for predict. Returning 503.')
         return res.status(503).json({ error: 'AI Service temporarily unavailable', details: aiError.message })
       }
     } else {

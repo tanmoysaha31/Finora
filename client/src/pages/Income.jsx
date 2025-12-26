@@ -243,7 +243,7 @@ export default function Income() {
                 <i className="fa-solid fa-star"></i>
                 <span className="text-sm">Opportunities</span>
              </button>
-             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px]">
+             <div onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px] cursor-pointer hover:opacity-80 transition-opacity">
                  <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="User" className="w-full h-full rounded-full object-cover border-2 border-[#1a1a1a]" />
             </div>
           </div>
