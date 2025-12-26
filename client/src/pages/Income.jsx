@@ -25,6 +25,7 @@ export default function Income() {
   });
 
   const [incomeStats, setIncomeStats] = useState({ monthlyTotal: 0, lastMonthTotal: 0, sources: {}, recent: [] });
+  const [aiSuggestion, setAiSuggestion] = useState('');
 
   // --- CONFIGURATION: Income Sources ---
   const sources = [
@@ -46,6 +47,8 @@ export default function Income() {
       try {
         let userId = null
         try { userId = localStorage.getItem('finora_user_id') } catch (_) {}
+        
+        // Fetch Income Summary
         const url = userId ? `${API_BASE}/api/income/summary?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/income/summary`
         const r = await fetch(url)
         const d = await r.json()
@@ -55,6 +58,14 @@ export default function Income() {
           sources: d?.sources || {},
           recent: Array.isArray(d?.recent) ? d.recent : []
         })
+
+        // Fetch AI Suggestion
+        const aiUrl = userId ? `${API_BASE}/api/ai/goal-booster?userId=${encodeURIComponent(userId)}` : `${API_BASE}/api/ai/goal-booster`
+        const aiRes = await fetch(aiUrl)
+        const aiData = await aiRes.json()
+        if (aiData?.suggestion) {
+          setAiSuggestion(aiData.suggestion)
+        }
       } catch (_) {}
     })()
   }, [])
@@ -201,6 +212,12 @@ export default function Income() {
             <button onClick={() => navigate('/add-expense')} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
               <i className="fa-solid fa-receipt w-5 text-center"></i> <span>Add Expense</span>
             </button>
+            <button onClick={() => navigate('/debt')} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+              <i className="fa-solid fa-chart-simple w-5 text-center"></i> <span>Debt Tracker</span>
+            </button>
+            <button onClick={() => navigate('/goals')} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+              <i className="fa-solid fa-bullseye w-5 text-center"></i> <span>Savings Goals</span>
+            </button>
           </nav>
         </div>
       </aside>
@@ -218,6 +235,14 @@ export default function Income() {
              </div>
           </div>
           <div className="flex items-center gap-3">
+             <button onClick={() => navigate('/income-sources')} className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg">
+                <i className="fa-solid fa-list"></i>
+                <span className="text-sm">Income Sources</span>
+             </button>
+             <button onClick={() => navigate('/income-opportunities')} className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:from-green-600 hover:to-emerald-600 transition-all transform hover:scale-105 shadow-lg">
+                <i className="fa-solid fa-star"></i>
+                <span className="text-sm">Opportunities</span>
+             </button>
              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 p-[2px]">
                  <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="User" className="w-full h-full rounded-full object-cover border-2 border-[#1a1a1a]" />
             </div>
@@ -391,10 +416,10 @@ export default function Income() {
                     <div className="glass-panel rounded-3xl p-6 border-l-4 border-emerald-500">
                         <div className="flex items-center gap-2 mb-3">
                              <i className="fa-solid fa-rocket text-emerald-400"></i>
-                             <h4 className="font-bold text-sm text-white">Goal Booster</h4>
+                             <h4 className="font-bold text-sm text-white">Goal Booster (AI Powered)</h4>
                         </div>
                         <p className="text-xs text-gray-400 leading-relaxed mb-3">
-                            If you save <strong className="text-white">20%</strong> of this deposit, you'll reach your <strong>New MacBook</strong> goal 12 days earlier!
+                            {aiSuggestion || "Analyzing your income patterns to provide smart goal suggestions..."}
                         </p>
                         {formData.amount && (
                             <div className="bg-emerald-500/10 rounded-xl p-3 flex justify-between items-center border border-emerald-500/20">
