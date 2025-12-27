@@ -7,7 +7,9 @@ const emotionSchema = new mongoose.Schema(
     mood: { type: String, required: true },
     necessity: { type: String },
     socialContext: { type: String },
-    timestamp: { type: Date, default: Date.now }
+    timestamp: { type: Date, default: Date.now },
+    editCount: { type: Number, default: 1 },
+    lastEditedAt: { type: Date }
   },
   { timestamps: true }
 )

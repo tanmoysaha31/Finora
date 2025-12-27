@@ -401,6 +401,9 @@ export default function Dashboard() {
             <Link to="/addnewexpense" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-plus w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Add new expense</span>
             </Link>
+            <Link to="/auto-expense" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
+              <i className="fa-solid fa-robot w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Auto Expense Add</span>
+            </Link>
             <Link to="/goals" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-gray-400 hover:bg-white/5 hover:text-white transition-all group border-l-4 border-transparent">
               <i className="fa-solid fa-bullseye w-5 text-center group-hover:text-purple-400 transition-colors"></i> <span>Saving Goal</span>
             </Link>

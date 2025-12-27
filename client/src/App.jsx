@@ -18,6 +18,7 @@ import Bills from './pages/Bills.jsx'
 import Profile from './pages/profile.jsx'
 import Notifications from './pages/Notifications.jsx'
 import PredictiveScenarios from './pages/PredictiveScenarios.jsx'
+import AutoExpense from './pages/AutoExpense.jsx'
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/bills" element={<Bills />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/predict" element={<PredictiveScenarios />} />
+        <Route path="/auto-expense" element={<AutoExpense />} />
       </Routes>
     </BrowserRouter>
   )

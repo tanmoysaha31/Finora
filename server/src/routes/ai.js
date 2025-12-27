@@ -99,6 +99,104 @@ function generateDebtFallback(totalDebt, monthlyIncome, monthlyPayment) {
   return `You're on track to be debt free in about ${timeStr}. Keep it up!`
 }
 
+// NEW ENDPOINT: Parse SMS Logic
+router.post('/parse-sms', async (req, res, next) => {
+  try {
+    const { message, userId } = req.body
+    if (!message) return res.status(400).json({ error: 'Message content required' })
+
+    const scoreConfidence = (parsed = {}) => {
+      let score = 0
+      if (parsed.amount) score += 35
+      if (parsed.trxId) score += 15
+      if (parsed.date) score += 10
+      if (parsed.merchant) score += 10
+      if (parsed.category && parsed.category !== 'Others' && parsed.category !== 'Other') score += 10
+      if (parsed.type) score += 10
+      return Math.max(40, Math.min(98, score))
+    }
+
+    const buildInsights = (parsed = {}) => {
+      const list = []
+      const amt = Number(parsed.amount)
+      if (parsed.type === 'income') list.push('Income detected; consider allocating a portion to savings goals.')
+      if (parsed.type === 'expense') list.push('Expense detected; review necessity and category alignment.')
+      if (!isNaN(amt) && amt > 0) {
+        if (amt > 5000) list.push('High-value transaction; ensure it matches your plan.')
+        else list.push('Moderate spend; keep tracking to avoid overages.')
+      }
+      if (parsed.category && parsed.category.toLowerCase().includes('utilities')) list.push('Utilities spend; check for recurring billing dates.')
+      if (parsed.fee) list.push('Fee included; watch service charges on frequent payments.')
+      if (parsed.merchant) list.push(`Merchant noted: ${parsed.merchant}. Validate this looks right.`)
+      return list.slice(0, 3)
+    }
+
+    // Fallback if AI fails or key is missing
+    const fallbackParse = {
+      amount: (message.match(/(?:BDT|Tk|৳)\s*([\d,]+(?:\.\d{2})?)/i) || [])[1] || '',
+      trxId: (message.match(/TrxID\s*[:\-]\s*([A-Z0-9]+)/i) || [])[1] || '',
+      type: message.toLowerCase().includes('cash in') ? 'income' : 'expense'
+    }
+
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const prompt = `
+          Analyze this financial transaction SMS (English/Bengali) and extract structured data.
+          Message: "${message}"
+          
+          Identify:
+          1. Amount (numeric only, no commas)
+          2. Currency (default BDT)
+          3. Transaction Type (income/expense)
+          4. Specific Type (e.g. 'Merchant Payment', 'Mobile Recharge', 'Cash In')
+          5. Merchant/Agent Name or Number
+          6. Transaction ID (TrxID)
+          7. Date (ISO format if present, else null)
+          8. Suggested Category (Food, Transport, Utilities, Shopping, Health, Income, Others)
+          9. 1 short insight/tip about this spending.
+
+          Return STRICT JSON format:
+          {
+            "amount": "1000",
+            "currency": "BDT",
+            "type": "expense",
+            "detectedType": "Payment",
+            "merchant": "Grameenphone",
+            "trxId": "8FH5G6H7",
+            "date": "2023-10-27",
+            "category": "Utilities",
+            "confidence": 95,
+            "insights": ["High spending on airtime this month"]
+          }
+        `
+
+        const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
+        const cleanText = text.replace(/```json|```/g, '').trim()
+        const parsed = JSON.parse(cleanText)
+
+        parsed.confidence = parsed.confidence ?? scoreConfidence(parsed)
+        const insights = Array.isArray(parsed.insights) ? parsed.insights : []
+        parsed.insights = insights.length ? insights : buildInsights(parsed)
+
+        return res.json({ success: true, parsed, source: `gemini (${model})` })
+      } catch (aiError) {
+        console.error('AI Parsing Failed:', aiError)
+        const parsed = { ...fallbackParse }
+        parsed.confidence = scoreConfidence(parsed)
+        parsed.insights = buildInsights(parsed)
+        return res.json({ success: true, parsed, source: 'fallback' })
+      }
+    }
+
+    const parsed = { ...fallbackParse }
+    parsed.confidence = scoreConfidence(parsed)
+    parsed.insights = buildInsights(parsed)
+    res.json({ success: true, parsed, source: 'regex' })
+  } catch (err) {
+    next(err)
+  }
+})
+
 router.get('/goal-booster', async (req, res, next) => {
   try {
     const { userId } = req.query

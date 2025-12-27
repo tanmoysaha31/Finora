@@ -24,6 +24,11 @@ export default function EmotionalState() {
   // --- DYNAMIC DATA STATE ---
   const [currentExpense, setCurrentExpense] = useState(null);
   const [categoryStats, setCategoryStats] = useState(null);
+  const [emotionRecord, setEmotionRecord] = useState(null);
+  const [editCount, setEditCount] = useState(0);
+  const [viewOnly, setViewOnly] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // --- CONFIGURATION ---
   const emotions = [
@@ -43,6 +48,39 @@ export default function EmotionalState() {
     { id: 'partner', label: 'Partner', icon: 'fa-heart' },
     { id: 'work', label: 'Work', icon: 'fa-briefcase' },
   ];
+
+  const hydrateFromRecord = (record) => {
+    if (!record) return;
+    const moodPreset = emotions.find(m => m.id === record.mood);
+    if (moodPreset) setSelectedMood(moodPreset);
+    setNecessity(record.necessity || 'want');
+    setSocialContext(record.socialContext || 'solo');
+    setEmotionRecord(record);
+    const count = record.editCount || 1;
+    setEditCount(count);
+    setViewOnly(count >= 2);
+  };
+
+  const fetchEmotionRecord = async (expenseId) => {
+    if (!expenseId) return;
+    try {
+      const userKey = localStorage.getItem('finora_user_id') || '';
+      const response = await fetch(`${API_BASE}/api/emotions/${expenseId}?userId=${userKey}`);
+      if (response.status === 404) {
+        setEmotionRecord(null);
+        setEditCount(0);
+        setViewOnly(false);
+        return;
+      }
+      if (!response.ok) throw new Error('Failed to fetch emotion log');
+      const payload = await response.json();
+      if (payload?.data) {
+        hydrateFromRecord(payload.data);
+      }
+    } catch (error) {
+      console.error('Failed to load emotion entry:', error);
+    }
+  };
 
   // --- FETCH DATA ON MOUNT ---
   useEffect(() => {
@@ -105,6 +143,7 @@ export default function EmotionalState() {
           similarMoments: []
         });
       } finally {
+        await fetchEmotionRecord(id);
         setFetchingData(false);
         setTimeout(() => setPageReady(true), 100);
       }
@@ -168,39 +207,67 @@ export default function EmotionalState() {
 
   // --- SAVE HANDLER (DB Integration) ---
   const handleSave = async () => {
+    if (viewOnly) {
+      setErrorMessage("Oh! It seems like you can't change the mood too many times!!");
+      setShowError(true);
+      return;
+    }
+
     if (!selectedMood) return;
     setLoading(true);
 
     const payload = {
-        userId: localStorage.getItem('finora_user_id'), // Ensure user linkage
-        expenseId: id, // Use the ID from URL
-        mood: selectedMood.id,
-        necessityScore: necessity,
-        socialContext: socialContext,
-        timestamp: new Date()
+      userId: localStorage.getItem('finora_user_id'),
+      expenseId: id,
+      mood: selectedMood.id,
+      necessityScore: necessity,
+      socialContext: socialContext,
+      timestamp: new Date()
     };
 
     try {
-        const response = await fetch(`${API_BASE}/api/emotions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (response.ok) {
-            setLoading(false);
-            setShowSuccess(true);
-            setTimeout(() => {
-                setAnimateOut(true);
-                setTimeout(() => navigate('/dashboard'), 500);
-            }, 1500);
-        } else {
-            setLoading(false);
-            alert("Failed to save mood. Please try again.");
-        }
-    } catch (error) {
-        console.error("Error saving mood:", error);
+      const isUpdate = Boolean(emotionRecord);
+      const response = await fetch(`${API_BASE}/api/emotions${isUpdate ? `/${id}` : ''}`, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 403) {
+        setErrorMessage("Oh! It seems like you can't change the mood too many times!!");
+        setShowError(true);
+        setViewOnly(true);
         setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to save mood');
+      }
+
+      const result = await response.json();
+      const saved = result?.data;
+
+      if (saved) {
+        hydrateFromRecord(saved);
+      } else {
+        const nextCount = isUpdate ? Math.min((editCount || 1) + 1, 2) : 1;
+        setEditCount(nextCount);
+        setViewOnly(nextCount >= 2);
+        setEmotionRecord({ ...payload, editCount: nextCount });
+      }
+
+      setLoading(false);
+      setShowSuccess(true);
+      setTimeout(() => {
+        setAnimateOut(true);
+        setTimeout(() => navigate('/dashboard'), 500);
+      }, 1500);
+    } catch (error) {
+      console.error('Error saving mood:', error);
+      setLoading(false);
+      setErrorMessage('Failed to save mood. Please try again.');
+      setShowError(true);
     }
   };
 
@@ -316,6 +383,16 @@ export default function EmotionalState() {
         <div className="w-10"></div>
       </header>
 
+      {viewOnly && (
+        <div className="relative z-10 px-6">
+          <div className="flex items-center gap-2 text-sm text-amber-300 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
+            <i className="fa-solid fa-lock"></i>
+            <span>Emotion locked after 2 changes — viewing your latest entry.</span>
+            <span>It seems like you can't change the mood too many times!!</span>
+          </div>
+        </div>
+      )}
+
       <main className="relative z-10 flex-1 overflow-y-auto px-4 pb-32 custom-scroll">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
 
@@ -364,12 +441,13 @@ export default function EmotionalState() {
                         return (
                             <button
                                 key={mood.id}
-                                onClick={() => setSelectedMood(mood)}
+                          onClick={() => { if (!viewOnly) setSelectedMood(mood); }}
                                 className={`mood-chip relative flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border transition-all duration-300
-                                    ${isSelected 
-                                        ? `bg-gradient-to-br ${mood.gradient} border-transparent shadow-[0_0_20px_rgba(0,0,0,0.3)] scale-105 z-10` 
-                                        : 'bg-[#1E1E23] border-white/5 hover:bg-[#25252A] hover:border-white/10'
-                                    }`}
+                            ${isSelected 
+                              ? `bg-gradient-to-br ${mood.gradient} border-transparent shadow-[0_0_20px_rgba(0,0,0,0.3)] scale-105 z-10` 
+                              : 'bg-[#1E1E23] border-white/5 hover:bg-[#25252A] hover:border-white/10'
+                            }
+                            ${viewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                             >
                                 <span className={`text-3xl ${isSelected ? 'scale-110' : 'grayscale opacity-70'}`}>{mood.emoji}</span>
                                 <span className={`text-[10px] font-bold uppercase ${isSelected ? 'text-white' : 'text-gray-500'}`}>{mood.label}</span>
@@ -386,9 +464,10 @@ export default function EmotionalState() {
                     {socialOptions.map(opt => (
                         <button
                             key={opt.id}
-                            onClick={() => setSocialContext(opt.id)}
+                          onClick={() => { if (!viewOnly) setSocialContext(opt.id); }}
                             className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm transition-all
-                                ${socialContext === opt.id ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                            ${socialContext === opt.id ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/5'}
+                            ${viewOnly ? ' opacity-50 cursor-not-allowed' : ''}`}
                             title={opt.label}
                         >
                             <i className={`fa-solid ${opt.icon}`}></i>
@@ -428,9 +507,9 @@ export default function EmotionalState() {
                  </div>
                  
                  <div className="flex bg-black/30 p-1.5 rounded-xl">
-                     <button onClick={() => setNecessity('need')} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'need' ? 'active' : 'text-gray-500 hover:text-gray-300'}`}>Need</button>
-                     <button onClick={() => setNecessity('want')} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'want' ? 'active' : 'text-gray-500 hover:text-gray-300'}`}>Want</button>
-                     <button onClick={() => setNecessity('regret')} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'regret' ? 'active bg-red-500/10 text-red-400' : 'text-gray-500 hover:text-red-400'}`}>Regret</button>
+                   <button onClick={() => { if (!viewOnly) setNecessity('need'); }} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'need' ? 'active' : 'text-gray-500 hover:text-gray-300'} ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}>Need</button>
+                   <button onClick={() => { if (!viewOnly) setNecessity('want'); }} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'want' ? 'active' : 'text-gray-500 hover:text-gray-300'} ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}>Want</button>
+                   <button onClick={() => { if (!viewOnly) setNecessity('regret'); }} className={`segment-btn flex-1 py-2.5 rounded-lg text-xs font-bold ${necessity === 'regret' ? 'active bg-red-500/10 text-red-400' : 'text-gray-500 hover:text-red-400'} ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}>Regret</button>
                  </div>
                  <p className="text-[10px] text-gray-500 mt-3 text-center">This helps calculate your "Impulse Score" later.</p>
              </div>
@@ -452,13 +531,13 @@ export default function EmotionalState() {
          <div className="max-w-md mx-auto pointer-events-auto">
              <button
                 onClick={handleSave}
-                disabled={!selectedMood || loading}
+              disabled={!selectedMood || loading}
                 className={`w-full h-14 rounded-2xl font-bold text-lg shadow-xl transition-all duration-300 flex items-center justify-center gap-2
                     ${theme.button} 
-                    ${!selectedMood ? 'opacity-50 cursor-not-allowed transform scale-95' : 'opacity-100 hover:scale-[1.02]'}
+                ${(!selectedMood) ? 'opacity-50 cursor-not-allowed transform scale-95' : 'opacity-100 hover:scale-[1.02]'}
                 `}
              >
-                {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <span>Save Reflection</span>}
+               {loading ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <span>{viewOnly ? 'View Only' : 'Save Reflection'}</span>}
              </button>
          </div>
       </div>
@@ -475,6 +554,24 @@ export default function EmotionalState() {
               </div>
           </div>
       )}
+
+        {showError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xl animate-fade-in">
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto bg-red-500 rounded-full flex items-center justify-center text-4xl text-black shadow-[0_0_50px_rgba(239,68,68,0.4)] mb-6 animate-bounce-in">
+                <i className="fa-solid fa-ban"></i>
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2 font-display">Action Blocked</h2>
+              <p className="text-gray-300 max-w-sm mx-auto">{errorMessage || "Oh! It seems like you can't change the mood too many times!!"}</p>
+              <button
+              onClick={() => setShowError(false)}
+              className="mt-6 px-4 py-2 rounded-xl bg-white text-black font-semibold shadow-lg hover:scale-105 transition"
+              >
+              Got it
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
