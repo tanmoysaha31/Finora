@@ -18,9 +18,13 @@ export default function FinancialPersonalityQuiz() {
   useEffect(() => {
     const fetchLatest = async () => {
       const userId = localStorage.getItem('finora_user_id');
-      if (!userId) return;
+      if (!userId) {
+        console.warn('No userId in localStorage; redirecting to login')
+        return;
+      }
       try {
-        const res = await fetch(`/api/quiz/latest?userId=${userId}`);
+        const backendURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://finora-1mgm.onrender.com');
+        const res = await fetch(`${backendURL}/api/quiz/latest?userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.hasResult) {
@@ -200,15 +204,24 @@ export default function FinancialPersonalityQuiz() {
     
     try {
       const userId = localStorage.getItem('finora_user_id');
+      if (!userId) {
+        alert('Please log in to save your quiz result.');
+        setGameState('start');
+        return;
+      }
       
       // Send to server
-      const response = await fetch('/api/quiz/submit', {
+      const backendURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://finora-1mgm.onrender.com');
+      const response = await fetch(`${backendURL}/api/quiz/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, traits: finalAnswers })
       });
 
-      if (!response.ok) throw new Error('Failed to calculate results');
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`Failed to save results: ${errText}`);
+      }
       const data = await response.json();
 
       // Artificial delay for "Analyzing" animation feel
