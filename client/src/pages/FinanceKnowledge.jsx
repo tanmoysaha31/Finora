@@ -275,8 +275,17 @@ export default function FinanceKnowledge() {
                         <div className="relative w-40 h-40">
                             <canvas ref={chartRef}></canvas>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-3xl font-bold text-white">{Math.round((progress.completedLessons.length / lessons.length) * 100)}%</span>
-                                <span className="text-[10px] text-gray-500 uppercase">Learned</span>
+                                {lessons.length === 0 ? (
+                                    <>
+                                        <span className="text-xl font-bold text-white">0%</span>
+                                        <span className="text-[10px] text-gray-500 uppercase">No Lessons</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-3xl font-bold text-white">{Math.round((progress.completedLessons.length / lessons.length) * 100)}%</span>
+                                        <span className="text-[10px] text-gray-500 uppercase">Learned</span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

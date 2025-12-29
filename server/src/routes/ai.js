@@ -17,6 +17,33 @@ const ROBUST_MODELS = [
   'gemini-exp-1206'             // Experimental fallback
 ]
 
+// Lightweight rule-based fallback so /predict never returns 503 when AI is down
+function buildPredictFallback({ query, monthlyIncome, monthlyExpenses, totalDebt, monthlyDebtPayments, goals }) {
+  const cashFlow = monthlyIncome - monthlyExpenses
+  const debtMonths = monthlyDebtPayments > 0 && totalDebt > 0
+    ? Math.ceil(totalDebt / monthlyDebtPayments)
+    : null
+
+  const goalTitles = goals.filter(g => g.target > 0).map(g => g.title)
+  const topGoal = goalTitles.length ? goalTitles[0] : null
+
+  const summaryParts = []
+  summaryParts.push(`Cash flow this month: $${cashFlow.toFixed(2)} (${monthlyIncome.toFixed(2)} in, ${monthlyExpenses.toFixed(2)} out).`)
+  if (totalDebt > 0) summaryParts.push(`Debt: $${totalDebt.toFixed(2)} with monthly payments around $${monthlyDebtPayments.toFixed(2)}.`)
+  if (debtMonths) summaryParts.push(`At this pace, debt payoff is about ${debtMonths} month${debtMonths === 1 ? '' : 's'}.`)
+  if (topGoal) summaryParts.push(`Primary goal spotted: ${topGoal}. Try directing any surplus there.`)
+
+  let action = 'Focus on keeping a positive cash flow and direct any surplus to highest-interest debt or your top goal.'
+  if (cashFlow < 0) action = 'You are running negative cash flow—trim non-essentials this week and pause discretionary buys until you break even.'
+  else if (cashFlow > 0 && totalDebt > 0) action = 'Use the surplus to make an extra payment on the highest-interest debt to pull in your payoff date.'
+  else if (cashFlow > 0 && !totalDebt && topGoal) action = `Route $${(cashFlow * 0.3).toFixed(0)} to ${topGoal} to accelerate progress.`
+
+  return {
+    prediction: `Quick take on your query: "${query}"\n${summaryParts.join(' ')} ${action}`,
+    source: 'rule-based'
+  }
+}
+
 async function ensureUser(userId) {
   if (userId) return await User.findById(userId)
   const u = await User.findOne().sort({ createdAt: -1 })
@@ -675,11 +702,27 @@ router.post('/predict', async (req, res, next) => {
         return res.json({ prediction: text, source: `gemini (${model})` })
 
       } catch (aiError) {
-        console.error('All AI models failed for predict. Returning 503.')
-        return res.status(503).json({ error: 'AI Service temporarily unavailable', details: aiError.message })
+        console.error('All AI models failed for predict. Falling back to rules.', aiError.message)
+        const fallback = buildPredictFallback({
+          query,
+          monthlyIncome,
+          monthlyExpenses,
+          totalDebt,
+          monthlyDebtPayments,
+          goals
+        })
+        return res.json(fallback)
       }
     } else {
-      return res.status(503).json({ error: 'AI Service not configured' })
+      const fallback = buildPredictFallback({
+        query,
+        monthlyIncome,
+        monthlyExpenses,
+        totalDebt,
+        monthlyDebtPayments,
+        goals
+      })
+      return res.json(fallback)
     }
 
   } catch (err) {
