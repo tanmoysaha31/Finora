@@ -139,18 +139,21 @@ export const lessonsData = [
 
 export const seedLessons = async () => {
   try {
+    console.log('⏳ Checking if lessons exist...')
     const count = await FinanceLesson.countDocuments()
     
     if (count === 0) {
       console.log('📚 Seeding finance lessons...')
-      await FinanceLesson.insertMany(lessonsData)
-      console.log('✅ Finance lessons seeded successfully!')
+      const result = await FinanceLesson.insertMany(lessonsData)
+      console.log(`✅ Finance lessons seeded successfully! (${result.length} lessons added)`)
       return true
     }
     
+    console.log(`ℹ️ Lessons already exist (${count} lessons found)`)
     return false // Already seeded
   } catch (err) {
     console.error('❌ Error seeding lessons:', err.message)
+    console.error('Error details:', err)
     throw err
   }
 }

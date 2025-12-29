@@ -31,10 +31,13 @@ app.use(express.json())
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-connectDB()
-
-// Auto-seed lessons on startup if empty
-seedLessons().catch(err => console.error('🔴 Seed error:', err))
+// Connect DB and seed on startup
+connectDB().then(() => {
+  // DB is now connected, safe to seed
+  seedLessons().catch(err => console.error('🔴 Seed error:', err))
+}).catch(err => {
+  console.error('❌ Failed to connect to database:', err.message)
+})
 
 app.use('/api/auth', authRouter)
 app.use('/api/profile', profileRouter)
