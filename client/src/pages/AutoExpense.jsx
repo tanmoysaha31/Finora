@@ -272,7 +272,7 @@ const TypewriterPanel = ({ insights }) => {
  */
 export default function AutoExpense() {
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com';
 
   // --- STATE ---
   const [rawInput, setRawInput] = useState('');

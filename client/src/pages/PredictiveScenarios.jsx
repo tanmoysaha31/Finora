@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function PredictiveScenarios() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com';
   
   const [query, setQuery] = useState('');
   const [result, setResult] = useState('');

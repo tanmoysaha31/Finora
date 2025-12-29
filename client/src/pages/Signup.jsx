@@ -27,7 +27,7 @@ export default function Signup() {
     }
     setLoading(true)
     try {
-      const r = await fetch('http://localhost:5000/api/auth/signup', {
+      const r = await fetch('https://finora-1mgm.onrender.com/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fullname, email, password })

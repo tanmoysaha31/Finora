@@ -35,7 +35,7 @@ export default function IncomeOpportunities() {
     setError('');
     
     try {
-      const response = await axios.get('http://localhost:5000/api/jobs/search', {
+      const response = await axios.get('https://finora-1mgm.onrender.com/api/jobs/search', {
         params: {
           skills: userSkills.join(','),
           jobType: activeTab,
@@ -70,7 +70,7 @@ export default function IncomeOpportunities() {
   const fetchInsights = async (jobs) => {
     setLoadingInsights(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/jobs/insights', {
+      const response = await axios.post('https://finora-1mgm.onrender.com/api/jobs/insights', {
         skills: userSkills,
         jobs: jobs.slice(0, 10), // Send top 10 jobs
         currentIncome: 5000 // You can make this dynamic based on user data

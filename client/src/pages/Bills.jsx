@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function Bills() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com'
   
   // --- STATE MANAGEMENT ---
   const [bills, setBills] = useState([]);

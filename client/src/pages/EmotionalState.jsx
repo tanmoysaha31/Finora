@@ -7,7 +7,7 @@ export default function EmotionalState() {
   const { id } = useParams(); // Get the Transaction ID from the URL
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com';
 
   // --- STATE MANAGEMENT ---
   const [loading, setLoading] = useState(false);

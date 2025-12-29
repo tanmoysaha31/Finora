@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export default function Notifications() {
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com';
   
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function Transactions() {
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://finora-1mgm.onrender.com'
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
