@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
+import { seedLessons } from './seeds/lessons.js'
 import authRouter from './routes/auth.js'
 import profileRouter from './routes/profile.js'
 import dashboardRouter from './routes/dashboard.js'
@@ -31,6 +32,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 connectDB()
+
+// Auto-seed lessons on startup if empty
+seedLessons().catch(err => console.error('🔴 Seed error:', err))
 
 app.use('/api/auth', authRouter)
 app.use('/api/profile', profileRouter)
