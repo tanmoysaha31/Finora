@@ -49,7 +49,8 @@ router.get('/', async (req, res, next) => {
     const lim = Math.min(200, Number(limit) || 50)
     const sk = Math.max(0, Number(skip) || 0)
 
-    const txs = await Transaction.find(match).sort({ date: -1 }).skip(sk).limit(lim)
+    // Sort by transaction date and then by creation time for consistent ordering
+    const txs = await Transaction.find(match).sort({ date: -1, createdAt: -1 }).skip(sk).limit(lim)
     const items = txs.map(t => ({ id: t._id.toString(), title: t.title, category: t.category, amount: Number(t.amount), date: t.date.toISOString().slice(0,10) }))
     res.json({ total: items.length, items })
   } catch (err) {

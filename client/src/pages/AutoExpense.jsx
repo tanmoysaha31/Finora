@@ -382,19 +382,54 @@ export default function AutoExpense() {
     setSaveStatus('saving');
     
     try {
-      const endpoint = transaction.intent === 'income' ? '/api/incomes/add' : '/api/expenses/add';
-      const userId = localStorage.getItem('finora_user_id');
-      
-      const payload = {
-        userId,
-        title: transaction.merchant || 'Unknown Transaction',
-        amount: Number(transaction.amount),
-        date: transaction.date,
-        category: transaction.category,
-        paymentMethod: 'Mobile Banking',
-        description: `Auto-parsed via CMUE. TrxID: ${transaction.trxId}`,
-        rawSMS: rawInput
+      const userId = (() => { try { const v = localStorage.getItem('finora_user_id'); return v && v !== 'null' && v !== 'undefined' ? v : null } catch(_) { return null } })();
+      // Choose endpoint and shape payload according to server contracts
+      const isIncome = transaction.intent === 'income';
+      const endpoint = isIncome ? '/api/income/add' : '/api/expenses/add';
+
+      // Map AutoExpense fields to API requirements
+      const incomeSourceMap = {
+        Salary: 'salary',
+        Business: 'business',
+        Freelance: 'freelance',
+        Investment: 'investment',
+        Gift: 'gift'
       };
+      const source = incomeSourceMap[transaction.category] || 'other';
+
+      // Normalize expense categories to canonical dashboard set
+      const normalizeCategory = (c) => {
+        const s = String(c || 'Others').toLowerCase()
+        if (s === 'utilities') return 'Utility'
+        if (s === 'food & dining' || s === 'food') return 'Food'
+        if (s === 'transportation' || s === 'transport') return 'Transport'
+        if (s === 'entertainment') return 'Entertainment'
+        if (s === 'shopping') return 'Shopping'
+        if (s === 'salary') return 'Salary'
+        if (s === 'tech') return 'Tech'
+        if (s === 'others') return 'Others'
+        return c || 'Others'
+      }
+
+      const payload = isIncome
+        ? {
+            userId,
+            amount: Number(transaction.amount),
+            source,
+            date: transaction.date,
+            note: transaction.merchant || 'AutoExpense Income',
+            paymentMethod: 'Mobile Banking',
+            isRecurring: false
+          }
+        : {
+            userId,
+            title: transaction.merchant || 'Unknown Transaction',
+            amount: Number(transaction.amount),
+            date: transaction.date,
+            category: normalizeCategory(transaction.category),
+            paymentMethod: 'Mobile Banking',
+            note: `Auto-parsed via CMUE. TrxID: ${transaction.trxId}`
+          };
 
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',

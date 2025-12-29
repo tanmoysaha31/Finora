@@ -28,7 +28,8 @@ router.get('/', async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     const [transactions, goals, contacts] = await Promise.all([
-      Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50),
+      // Sort primarily by transaction date, then by creation time for stable ordering
+      Transaction.find({ userId: user._id }).sort({ date: -1, createdAt: -1 }).limit(50),
       Goal.find({ userId: user._id }).sort({ createdAt: -1 }),
       Contact.find({ userId: user._id }).sort({ createdAt: -1 })
     ])
