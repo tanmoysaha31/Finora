@@ -439,22 +439,20 @@ export default function AutoExpense() {
 
       if (res.ok) {
         setSaveStatus('success');
-        // Reset after delay
+        // Show success message, then navigate to dashboard to display new transaction
         setTimeout(() => {
-          setSaveStatus(null);
-          setRawInput('');
-          setTransaction({ 
-            amount: '', merchant: '', category: 'Others', date: new Date().toISOString().split('T')[0], 
-            trxId: '', intent: 'expense', fee: 0, confidence: 0, insights: [] 
-          });
-        }, 1500);
+          navigate('/dashboard');
+        }, 1200);
       } else {
+        const errorData = await res.json();
         setSaveStatus('error');
+        console.error('Save failed:', errorData);
         setTimeout(() => setSaveStatus(null), 2000);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error saving transaction:', e);
       setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 2000);
     }
   };
 
@@ -550,6 +548,7 @@ export default function AutoExpense() {
                   <Wand2 size={10} /> Demo
                 </button>
                 {rawInput && <button onClick={() => setRawInput('')} className="text-[10px] text-red-400 hover:text-white transition-colors font-bold uppercase">Clear</button>}
+                {saveStatus === 'saving' && <span className="text-[10px] text-blue-400 font-semibold animate-pulse">Saving...</span>}
                 {aiStatus === 'loading' && <span className="text-[10px] text-yellow-400 font-semibold">AI parsing…</span>}
               </div>
 

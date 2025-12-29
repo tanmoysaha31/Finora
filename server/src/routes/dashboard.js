@@ -34,6 +34,10 @@ router.get('/', async (req, res, next) => {
       Contact.find({ userId: user._id }).sort({ createdAt: -1 })
     ])
 
+    // Calculate chart data using ALL transactions (not just the limited 50)
+    // This ensures historical income/expense data is included
+    const allTransactionsForChart = await Transaction.find({ userId: user._id }).sort({ date: -1 })
+    
     const now = new Date()
     const months = []
     for (let i = 6; i >= 0; i--) {
@@ -44,7 +48,8 @@ router.get('/', async (req, res, next) => {
     const expenseByMonth = new Array(months.length).fill(0)
     let totalBalance = 0
 
-    transactions.forEach(tx => {
+    // Calculate balance and monthly breakdown from ALL transactions
+    allTransactionsForChart.forEach(tx => {
       totalBalance += tx.amount
       const k = `${tx.date.getFullYear()}-${tx.date.getMonth()}`
       const idx = months.findIndex(m => m.key === k)
