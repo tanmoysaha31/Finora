@@ -27,18 +27,31 @@ export default function FinanceKnowledge() {
   });
 
   const userId = localStorage.getItem('finora_user_id');
+  
+  // Get backend URL - use window location in production, relative path in dev
+  const getBackendURL = () => {
+    if (import.meta.env.DEV) {
+      return '' // Local dev: use relative path (vite proxy handles it)
+    }
+    // Production: construct full backend URL
+    // Check if we have a backend URL in environment or derive from current domain
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://finora-api.onrender.com'
+    return backendUrl
+  }
 
   // --- INIT ---
   useEffect(() => {
+    const backendURL = getBackendURL();
+    
     // Fetch Lessons
-    fetch('/api/knowledge/lessons')
+    fetch(`${backendURL}/api/knowledge/lessons`)
       .then(res => res.json())
       .then(data => setLessons(data))
       .catch(err => console.error("Error fetching lessons:", err));
 
     // Fetch Progress
     if (userId) {
-        fetch(`/api/knowledge/progress?userId=${userId}`)
+        fetch(`${backendURL}/api/knowledge/progress?userId=${userId}`)
             .then(res => res.json())
             .then(data => {
                 if (data) {
@@ -127,7 +140,8 @@ export default function FinanceKnowledge() {
         // Save to DB
         if (userId) {
             try {
-                const res = await fetch('/api/knowledge/complete', {
+                const backendURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://finora-api.onrender.com');
+                const res = await fetch(`${backendURL}/api/knowledge/complete`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
