@@ -9,13 +9,12 @@ import Debt from '../models/Debt.js'
 const router = express.Router()
 
 // --- CONFIGURATION: Reliable Model List ---
-// Prioritizes faster/cheaper models, falls back to legacy/pro if needed.
+// Using Gemini models verified working with current API (Dec 2025)
+// gemini-flash-latest is the most stable and auto-updates
 const ROBUST_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-1.0-pro',
-  'gemini-pro',
-  'gemini-flash-latest'
+  'gemini-flash-latest',        // Primary - auto-updates, fast, reliable
+  'gemini-2.0-flash-001',       // Backup - specific stable version
+  'gemini-exp-1206'             // Experimental fallback
 ]
 
 async function ensureUser(userId) {
@@ -99,100 +98,256 @@ function generateDebtFallback(totalDebt, monthlyIncome, monthlyPayment) {
   return `You're on track to be debt free in about ${timeStr}. Keep it up!`
 }
 
-// NEW ENDPOINT: Parse SMS Logic
+// NEW ENDPOINT: Advanced SMS Parsing with Gemini AI
 router.post('/parse-sms', async (req, res, next) => {
   try {
     const { message, userId } = req.body
     if (!message) return res.status(400).json({ error: 'Message content required' })
 
+    // Advanced confidence scoring based on parsed fields
     const scoreConfidence = (parsed = {}) => {
       let score = 0
-      if (parsed.amount) score += 35
-      if (parsed.trxId) score += 15
+      // Amount is critical
+      if (parsed.amount && !isNaN(parseFloat(parsed.amount))) score += 40
+      // Transaction ID adds credibility
+      if (parsed.trxId && parsed.trxId.length >= 6) score += 20
+      // Date adds context
       if (parsed.date) score += 10
-      if (parsed.merchant) score += 10
+      // Merchant/source identification
+      if (parsed.merchant && parsed.merchant !== 'Unknown') score += 15
+      // Category specificity
       if (parsed.category && parsed.category !== 'Others' && parsed.category !== 'Other') score += 10
-      if (parsed.type) score += 10
-      return Math.max(40, Math.min(98, score))
+      // Type detection (income vs expense)
+      if (parsed.type) score += 5
+      
+      return Math.max(50, Math.min(100, score))
     }
 
+    // Generate contextual insights based on transaction data
     const buildInsights = (parsed = {}) => {
-      const list = []
-      const amt = Number(parsed.amount)
-      if (parsed.type === 'income') list.push('Income detected; consider allocating a portion to savings goals.')
-      if (parsed.type === 'expense') list.push('Expense detected; review necessity and category alignment.')
-      if (!isNaN(amt) && amt > 0) {
-        if (amt > 5000) list.push('High-value transaction; ensure it matches your plan.')
-        else list.push('Moderate spend; keep tracking to avoid overages.')
+      const insights = []
+      const amt = parseFloat(parsed.amount) || 0
+      const type = parsed.type || 'expense'
+      const category = parsed.category || 'Others'
+      
+      // Transaction type specific insights
+      if (type === 'income') {
+        if (amt > 10000) {
+          insights.push(`💰 Significant income received! Consider allocating 20% (৳${(amt * 0.2).toFixed(0)}) to savings.`)
+        } else if (amt > 5000) {
+          insights.push(`✅ Income received. Great time to update your budget and track this cash flow.`)
+        } else {
+          insights.push(`📥 Income detected. Every amount counts toward your financial goals!`)
+        }
+        
+        if (category === 'Salary') {
+          insights.push(`💼 Salary credited. Review your monthly budget allocation and prioritize savings.`)
+        }
+      } else if (type === 'expense') {
+        if (amt > 10000) {
+          insights.push(`⚠️ High-value expense detected! Ensure this aligns with your budget plan.`)
+        } else if (amt > 5000) {
+          insights.push(`💳 Moderate expense. Track category spending to avoid monthly overages.`)
+        } else if (amt > 1000) {
+          insights.push(`🛒 Regular expense logged. Keep monitoring to stay within budget limits.`)
+        } else {
+          insights.push(`💵 Small transaction tracked. Small expenses add up—stay mindful!`)
+        }
+        
+        // Category-specific advice
+        if (category === 'Food') {
+          insights.push(`🍔 Food expense. Consider meal planning to optimize your food budget.`)
+        } else if (category === 'Transport') {
+          insights.push(`🚗 Transport cost logged. Compare with alternatives to save on commute.`)
+        } else if (category === 'Utilities') {
+          insights.push(`💡 Utility bill detected. Monitor usage patterns to reduce future costs.`)
+        } else if (category === 'Shopping') {
+          insights.push(`🛍️ Shopping detected. Evaluate if this was planned or impulse buying.`)
+        } else if (category === 'Entertainment') {
+          insights.push(`🎬 Entertainment expense. Balance fun spending with savings goals.`)
+        } else if (category === 'Health') {
+          insights.push(`🏥 Health expense tracked. Essential spending—ensure you have emergency funds.`)
+        }
       }
-      if (parsed.category && parsed.category.toLowerCase().includes('utilities')) list.push('Utilities spend; check for recurring billing dates.')
-      if (parsed.fee) list.push('Fee included; watch service charges on frequent payments.')
-      if (parsed.merchant) list.push(`Merchant noted: ${parsed.merchant}. Validate this looks right.`)
-      return list.slice(0, 3)
+      
+      // Additional contextual insights
+      if (parsed.merchant) {
+        insights.push(`🏪 Transaction with ${parsed.merchant}. Verify the amount matches your receipt.`)
+      }
+      
+      if (parsed.fee && parseFloat(parsed.fee) > 0) {
+        insights.push(`📊 Service fee: ৳${parsed.fee}. Consider fee-free alternatives for frequent transactions.`)
+      }
+      
+      // Return top 3 most relevant insights
+      return insights.slice(0, 3)
     }
 
-    // Fallback if AI fails or key is missing
-    const fallbackParse = {
-      amount: (message.match(/(?:BDT|Tk|৳)\s*([\d,]+(?:\.\d{2})?)/i) || [])[1] || '',
-      trxId: (message.match(/TrxID\s*[:\-]\s*([A-Z0-9]+)/i) || [])[1] || '',
-      type: message.toLowerCase().includes('cash in') ? 'income' : 'expense'
+    // Enhanced regex-based fallback parsing
+    const fallbackParse = (text) => {
+      const result = {
+        amount: '',
+        trxId: '',
+        merchant: '',
+        date: null,
+        type: 'expense',
+        category: 'Others',
+        fee: '',
+        currency: 'BDT'
+      }
+      
+      // Amount extraction (supports BDT, Tk, ৳, and plain numbers)
+      const amountPatterns = [
+        /(?:BDT|Tk|৳)\s*([\d,]+(?:\.\d{2})?)/i,
+        /([\d,]+(?:\.\d{2})?)\s*(?:BDT|Tk|৳|টাকা)/i,
+        /Amount[:\s]*([\d,]+(?:\.\d{2})?)/i,
+        /(?:sent|received|paid|credited|debited)[^\d]*([\d,]+(?:\.\d{2})?)/i
+      ]
+      
+      for (const pattern of amountPatterns) {
+        const match = text.match(pattern)
+        if (match && match[1]) {
+          result.amount = match[1].replace(/,/g, '')
+          break
+        }
+      }
+      
+      // Transaction ID extraction
+      const trxIdPatterns = [
+        /TrxID[:\s]*([A-Z0-9]{6,})/i,
+        /Trans(?:action)?\s*ID[:\s]*([A-Z0-9]{6,})/i,
+        /Reference[:\s]*([A-Z0-9]{6,})/i
+      ]
+      
+      for (const pattern of trxIdPatterns) {
+        const match = text.match(pattern)
+        if (match && match[1]) {
+          result.trxId = match[1]
+          break
+        }
+      }
+      
+      // Date extraction (DD/MM/YYYY or DD-MM-YYYY)
+      const dateMatch = text.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/)
+      if (dateMatch) {
+        const [, day, month, year] = dateMatch
+        result.date = `${year}-${month}-${day}`
+      }
+      
+      // Transaction type detection (income vs expense)
+      const incomeKeywords = ['cash in', 'received', 'credited', 'add money', 'remittance', 'salary', 'income', 'deposit', 'ক্যাশ ইন']
+      const expenseKeywords = ['cash out', 'sent', 'paid', 'payment', 'purchase', 'debit', 'withdraw', 'ক্যাশ আউট', 'পেমেন্ট']
+      
+      const lowerText = text.toLowerCase()
+      if (incomeKeywords.some(kw => lowerText.includes(kw))) {
+        result.type = 'income'
+        result.category = 'Salary'
+      } else if (expenseKeywords.some(kw => lowerText.includes(kw))) {
+        result.type = 'expense'
+      }
+      
+      // Merchant extraction
+      const merchantPatterns = [
+        /(?:to|from)\s+([A-Za-z0-9\s]+?)(?:\.|,|TrxID|Amount)/i,
+        /Merchant[:\s]*([A-Za-z0-9\s]+?)(?:\.|,|$)/i
+      ]
+      
+      for (const pattern of merchantPatterns) {
+        const match = text.match(pattern)
+        if (match && match[1]) {
+          result.merchant = match[1].trim()
+          break
+        }
+      }
+      
+      // Category detection based on keywords
+      if (lowerText.includes('food') || lowerText.includes('restaurant') || lowerText.includes('foodpanda')) {
+        result.category = 'Food'
+      } else if (lowerText.includes('uber') || lowerText.includes('pathao') || lowerText.includes('transport')) {
+        result.category = 'Transport'
+      } else if (lowerText.includes('bill') || lowerText.includes('utility') || lowerText.includes('recharge')) {
+        result.category = 'Utilities'
+      } else if (lowerText.includes('shop') || lowerText.includes('daraz') || lowerText.includes('purchase')) {
+        result.category = 'Shopping'
+      }
+      
+      // Fee extraction
+      const feeMatch = text.match(/(?:Fee|Charge)[:\s]*([\d,]+(?:\.\d{2})?)/i)
+      if (feeMatch) {
+        result.fee = feeMatch[1].replace(/,/g, '')
+      }
+      
+      return result
     }
 
+    // Try Gemini AI first, fallback to regex if fails
     if (process.env.GEMINI_API_KEY) {
       try {
-        const prompt = `
-          Analyze this financial transaction SMS (English/Bengali) and extract structured data.
-          Message: "${message}"
-          
-          Identify:
-          1. Amount (numeric only, no commas)
-          2. Currency (default BDT)
-          3. Transaction Type (income/expense)
-          4. Specific Type (e.g. 'Merchant Payment', 'Mobile Recharge', 'Cash In')
-          5. Merchant/Agent Name or Number
-          6. Transaction ID (TrxID)
-          7. Date (ISO format if present, else null)
-          8. Suggested Category (Food, Transport, Utilities, Shopping, Health, Income, Others)
-          9. 1 short insight/tip about this spending.
+        const prompt = `You are an expert financial transaction parser. Analyze this SMS message and extract structured data.
 
-          Return STRICT JSON format:
-          {
-            "amount": "1000",
-            "currency": "BDT",
-            "type": "expense",
-            "detectedType": "Payment",
-            "merchant": "Grameenphone",
-            "trxId": "8FH5G6H7",
-            "date": "2023-10-27",
-            "category": "Utilities",
-            "confidence": 95,
-            "insights": ["High spending on airtime this month"]
-          }
-        `
+MESSAGE: "${message}"
+
+TASK: Extract the following information with high accuracy:
+1. Amount (numeric only, remove commas)
+2. Currency (BDT, USD, etc.)
+3. Transaction Type: "income" or "expense"
+4. Merchant/Source name or "Unknown"
+5. Transaction ID (alphanumeric)
+6. Date in YYYY-MM-DD format (if mentioned, else null)
+7. Category: Choose from [Food, Transport, Utilities, Shopping, Health, Entertainment, Salary, Transfer, Business, Others]
+8. Fee amount (if any)
+9. Confidence score (0-100) based on how clear the information is
+
+RULES:
+- If message says "received", "credited", "cash in", "salary" → type is "income"
+- If message says "paid", "sent", "cash out", "payment" → type is "expense"
+- Extract merchant from context (e.g., "to Foodpanda", "from Boss")
+- Be intelligent about Bengali/English mixed text
+- Confidence should be 90+ if amount and type are clear
+
+Return ONLY valid JSON (no markdown, no extra text):
+{
+  "amount": "1250.00",
+  "currency": "BDT",
+  "type": "expense",
+  "merchant": "Foodpanda",
+  "trxId": "8FH5G6H7",
+  "date": "2025-12-27",
+  "category": "Food",
+  "fee": "0",
+  "confidence": 95,
+  "detectedType": "Merchant Payment"
+}`
 
         const { text, model } = await generateWithFallback(process.env.GEMINI_API_KEY, prompt)
         const cleanText = text.replace(/```json|```/g, '').trim()
-        const parsed = JSON.parse(cleanText)
-
-        parsed.confidence = parsed.confidence ?? scoreConfidence(parsed)
-        const insights = Array.isArray(parsed.insights) ? parsed.insights : []
-        parsed.insights = insights.length ? insights : buildInsights(parsed)
-
-        return res.json({ success: true, parsed, source: `gemini (${model})` })
-      } catch (aiError) {
-        console.error('AI Parsing Failed:', aiError)
-        const parsed = { ...fallbackParse }
+        let parsed = JSON.parse(cleanText)
+        
+        // Recalculate confidence based on actual data quality
         parsed.confidence = scoreConfidence(parsed)
+        
+        // Generate contextual insights
         parsed.insights = buildInsights(parsed)
-        return res.json({ success: true, parsed, source: 'fallback' })
+        
+        console.log(`[SMS Parse] Gemini success: ${parsed.amount} ${parsed.currency} - ${parsed.type}`)
+        return res.json({ success: true, parsed, source: `gemini (${model})` })
+        
+      } catch (aiError) {
+        console.error('[SMS Parse] Gemini failed:', aiError.message)
+        // Fall through to regex parsing
       }
     }
 
-    const parsed = { ...fallbackParse }
+    // Fallback to regex-based parsing
+    console.log('[SMS Parse] Using regex fallback')
+    const parsed = fallbackParse(message)
     parsed.confidence = scoreConfidence(parsed)
     parsed.insights = buildInsights(parsed)
-    res.json({ success: true, parsed, source: 'regex' })
+    
+    res.json({ success: true, parsed, source: 'regex-fallback' })
+    
   } catch (err) {
+    console.error('[SMS Parse] Error:', err)
     next(err)
   }
 })

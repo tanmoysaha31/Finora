@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'chart.js/auto';
+import axios from 'axios';
 
 export default function IncomeOpportunities() {
   const navigate = useNavigate();
@@ -8,65 +9,103 @@ export default function IncomeOpportunities() {
   const chartInstance = useRef(null);
 
   // --- STATE ---
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('freelance');
+  const [activeTab, setActiveTab] = useState('all');
   
-  const [userSkills] = useState(['Design', 'React', 'Writing']);
+  const [userSkills, setUserSkills] = useState(['React', 'JavaScript', 'Design']);
+  const [newSkill, setNewSkill] = useState('');
   const [location] = useState('Remote');
   
-  const [opportunities] = useState([
-    { 
-      id: 1, 
-      title: 'UI/UX Designer for Fintech', 
-      company: 'NeoBank Corp', 
-      platform: 'Upwork',
-      rate: '$45 - $60 / hr', 
-      type: 'freelance',
-      matchScore: 98, 
-      skills: ['Design', 'Figma', 'Finance'],
-      posted: '2h ago',
-      logo: '🎨'
-    },
-    { 
-      id: 2, 
-      title: 'Frontend React Developer', 
-      company: 'TechFlow', 
-      platform: 'LinkedIn',
-      rate: '$85,000 / yr', 
-      type: 'fulltime',
-      matchScore: 94, 
-      skills: ['React', 'JS', 'Tailwind'],
-      posted: '5h ago',
-      logo: '💻'
-    },
-    { 
-      id: 3, 
-      title: 'Technical Blog Writer', 
-      company: 'DevTo', 
-      platform: 'Freelance',
-      rate: '$200 / article', 
-      type: 'side-hustle',
-      matchScore: 88, 
-      skills: ['Writing', 'Tech', 'SEO'],
-      posted: '1d ago',
-      logo: '📰'
-    },
-    { 
-      id: 4, 
-      title: 'Logo Designer', 
-      company: 'StartUp Inc', 
-      platform: 'Fiverr',
-      rate: '$150 fixed', 
-      type: 'freelance',
-      matchScore: 76, 
-      skills: ['Design', 'Brand'],
-      posted: '3d ago',
-      logo: '🎭'
-    }
-  ]);
-
+  const [opportunities, setOpportunities] = useState([]);
   const [filteredOpp, setFilteredOpp] = useState([]);
+  const [error, setError] = useState('');
+  const [searchTriggered, setSearchTriggered] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
+
+  // Fetch jobs from API
+  const fetchJobs = async () => {
+    if (userSkills.length === 0) {
+      setError('Please add at least one skill to search for jobs');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await axios.get('http://localhost:5000/api/jobs/search', {
+        params: {
+          skills: userSkills.join(','),
+          jobType: activeTab,
+          location: location
+        }
+      });
+
+      if (response.data.success) {
+        setOpportunities(response.data.jobs);
+        setSearchTriggered(true);
+        
+        // Fetch AI insights after getting jobs
+        if (response.data.jobs.length > 0) {
+          fetchInsights(response.data.jobs);
+        }
+      } else {
+        setError(response.data.message || 'Failed to fetch jobs');
+      }
+    } catch (err) {
+      console.error('Error fetching jobs:', err);
+      if (err.response?.status === 500 && err.response?.data?.message?.includes('API key')) {
+        setError('⚠️ API key not configured. Please follow setup instructions.');
+      } else {
+        setError('Failed to fetch job opportunities. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch AI-powered insights
+  const fetchInsights = async (jobs) => {
+    setLoadingInsights(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/jobs/insights', {
+        skills: userSkills,
+        jobs: jobs.slice(0, 10), // Send top 10 jobs
+        currentIncome: 5000 // You can make this dynamic based on user data
+      });
+
+      if (response.data.success) {
+        setInsights(response.data.insights);
+      }
+    } catch (err) {
+      console.error('Error fetching insights:', err);
+      // Keep default/static insights if API fails
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
+
+  // Add skill
+  const handleAddSkill = () => {
+    if (newSkill.trim() && !userSkills.includes(newSkill.trim())) {
+      setUserSkills([...userSkills, newSkill.trim()]);
+      setNewSkill('');
+    }
+  };
+
+  // Remove skill
+  const handleRemoveSkill = (skillToRemove) => {
+    setUserSkills(userSkills.filter(skill => skill !== skillToRemove));
+  };
+
+  // Handle Enter key for adding skills
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleAddSkill();
+    }
+  };
 
   useEffect(() => {
     setTimeout(() => {
@@ -90,13 +129,23 @@ export default function IncomeOpportunities() {
     gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
     gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
 
+    // Use dynamic data from insights or fallback to defaults
+    const chartData = insights?.potentialImpact?.projections 
+      ? [
+          insights.potentialImpact.projections.current,
+          insights.potentialImpact.projections.oneGig,
+          insights.potentialImpact.projections.twoGigs,
+          insights.potentialImpact.projections.threeGigs
+        ]
+      : [5200, 5800, 6500, 7400];
+
     chartInstance.current = new Chart(ctx, {
       type: 'line',
       data: {
         labels: ['Current', '+1 Gig', '+2 Gigs', '+3 Gigs'],
         datasets: [{
           label: 'Projected Monthly Income',
-          data: [5200, 5800, 6500, 7400],
+          data: chartData,
           borderColor: '#10b981',
           backgroundColor: gradient,
           borderWidth: 3,
@@ -119,7 +168,7 @@ export default function IncomeOpportunities() {
     });
 
     return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-  }, [loading]);
+  }, [loading, insights]);
 
   const getMatchColor = (score) => {
     if (score >= 90) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
@@ -186,7 +235,7 @@ export default function IncomeOpportunities() {
           </div>
           <div className="flex items-center gap-3">
              <div className="bg-white/5 p-1 rounded-xl flex">
-                 {['freelance', 'fulltime', 'side-hustle'].map(t => (
+                 {['all', 'freelance', 'fulltime', 'side-hustle'].map(t => (
                      <button 
                         key={t}
                         onClick={() => setActiveTab(t)}
@@ -210,24 +259,67 @@ export default function IncomeOpportunities() {
                             <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Your Profile Match</h3>
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {userSkills.map(skill => (
-                                    <span key={skill} className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1">
+                                    <span key={skill} className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2">
                                         ✓ {skill}
+                                        <button 
+                                            onClick={() => handleRemoveSkill(skill)}
+                                            className="hover:text-red-400 ml-1"
+                                        >
+                                            ×
+                                        </button>
                                     </span>
                                 ))}
-                                <button className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-400 text-xs hover:bg-white/10 hover:text-white transition-colors">
-                                    + Add Skill
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={newSkill}
+                                        onChange={(e) => setNewSkill(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="Add skill..."
+                                        className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white text-xs placeholder-gray-500 focus:border-emerald-500 focus:outline-none w-32"
+                                    />
+                                    <button 
+                                        onClick={handleAddSkill}
+                                        className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-400 text-xs hover:bg-white/10 hover:text-white transition-colors"
+                                    >
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-xs">
+                                <span className="text-gray-400">📍 {location}</span>
+                                <span className="text-gray-400">⏰ 10h/week available</span>
+                                <button 
+                                    onClick={fetchJobs}
+                                    disabled={loading || userSkills.length === 0}
+                                    className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors shadow-lg flex items-center gap-2"
+                                >
+                                    {loading ? '🔄 Searching...' : '🔍 Search Jobs'}
                                 </button>
                             </div>
-                            <div className="flex gap-4 text-xs text-gray-400">
-                                <span>📍 {location}</span>
-                                <span>⏰ 10h/week available</span>
-                            </div>
+                            {error && (
+                                <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                                    {error}
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="space-y-4">
                         {loading ? (
-                            [1,2,3].map(i => <div key={i} className="h-32 bg-[#1A1A23] rounded-2xl animate-pulse"></div>)
+                            [1,2,3,4,5].map(i => <div key={i} className="h-32 bg-[#1A1A23] rounded-2xl animate-pulse"></div>)
+                        ) : filteredOpp.length === 0 && searchTriggered ? (
+                            <div className="glass-panel rounded-2xl p-8 text-center">
+                                <div className="text-5xl mb-4">💼</div>
+                                <h3 className="text-lg font-bold text-white mb-2">No jobs found</h3>
+                                <p className="text-sm text-gray-400">Try adjusting your skills or changing the job type filter</p>
+                            </div>
+                        ) : filteredOpp.length === 0 ? (
+                            <div className="glass-panel rounded-2xl p-8 text-center">
+                                <div className="text-5xl mb-4">🚀</div>
+                                <h3 className="text-lg font-bold text-white mb-2">Ready to find opportunities?</h3>
+                                <p className="text-sm text-gray-400">Add your skills and click "Search Jobs" to get started!</p>
+                            </div>
                         ) : (
                             filteredOpp.map((job, index) => (
                                 <div 
@@ -267,9 +359,14 @@ export default function IncomeOpportunities() {
                                                 <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
                                                     🔖
                                                 </button>
-                                                <button className="px-4 py-1.5 rounded-lg bg-white text-black text-xs font-bold hover:bg-emerald-400 transition-colors shadow-lg">
+                                                <a 
+                                                    href={job.applyLink} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-1.5 rounded-lg bg-white text-black text-xs font-bold hover:bg-emerald-400 transition-colors shadow-lg"
+                                                >
                                                     Apply Now
-                                                </button>
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -282,35 +379,99 @@ export default function IncomeOpportunities() {
 
                 <div className="space-y-6">
                     
+                    {/* Potential Impact - Dynamic */}
                     <div className="glass-panel rounded-3xl p-6 flex flex-col">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Potential Impact</h3>
-                            <span className="text-xs font-bold text-emerald-400">+ $2,200/mo</span>
+                            <span className="text-xs font-bold text-emerald-400">
+                                {loadingInsights ? (
+                                    <span className="animate-pulse">Loading...</span>
+                                ) : insights?.potentialImpact ? (
+                                    `+ $${insights.potentialImpact.monthlyIncrease.toLocaleString()}/mo`
+                                ) : (
+                                    '+ $2,200/mo'
+                                )}
+                            </span>
                         </div>
                         <div className="relative w-full h-40">
                              <canvas ref={chartRef}></canvas>
                         </div>
                         <p className="text-[10px] text-gray-500 mt-4 text-center">
-                            Taking just 2 of these gigs could boost your annual income by <strong>$26k</strong>.
+                            {loadingInsights ? (
+                                <span className="animate-pulse">Analyzing your opportunities...</span>
+                            ) : insights?.potentialImpact?.insight ? (
+                                insights.potentialImpact.insight
+                            ) : (
+                                <>Taking just 2 of these gigs could boost your annual income by <strong>$26k</strong>.</>
+                            )}
                         </p>
                     </div>
 
+                    {/* Skill Unlock - Dynamic */}
                     <div className="glass-panel rounded-3xl p-6 border-l-4 border-blue-500">
                         <div className="flex items-center gap-3 mb-3">
                              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">🎓</div>
                              <h4 className="font-bold text-white">Skill Unlock</h4>
                         </div>
-                        <p className="text-sm text-gray-300 leading-relaxed mb-4">
-                            You are matching 80% of "Senior Designer" roles. The missing piece?
-                        </p>
-                        <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 flex justify-between items-center cursor-pointer hover:bg-blue-500/20 transition-colors">
-                            <div>
-                                <h5 className="font-bold text-white text-sm">Learn TypeScript</h5>
-                                <p className="text-[10px] text-blue-300">+ $15/hr potential increase</p>
+                        {loadingInsights ? (
+                            <div className="animate-pulse space-y-3">
+                                <div className="h-4 bg-white/5 rounded w-3/4"></div>
+                                <div className="h-12 bg-white/5 rounded"></div>
                             </div>
-                            <span className="text-blue-400 text-xs">→</span>
-                        </div>
+                        ) : insights?.skillUnlock ? (
+                            <>
+                                <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                                    {insights.skillUnlock.reasoning}
+                                </p>
+                                <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 flex justify-between items-center cursor-pointer hover:bg-blue-500/20 transition-colors">
+                                    <div>
+                                        <h5 className="font-bold text-white text-sm">Learn {insights.skillUnlock.missingSkill}</h5>
+                                        <p className="text-[10px] text-blue-300">{insights.skillUnlock.potentialIncrease} potential increase • +{insights.skillUnlock.matchImprovement}% job matches</p>
+                                    </div>
+                                    <span className="text-blue-400 text-xs">→</span>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                                    You are matching 80% of "Senior Designer" roles. The missing piece?
+                                </p>
+                                <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 flex justify-between items-center cursor-pointer hover:bg-blue-500/20 transition-colors">
+                                    <div>
+                                        <h5 className="font-bold text-white text-sm">Learn TypeScript</h5>
+                                        <p className="text-[10px] text-blue-300">+ $15/hr potential increase</p>
+                                    </div>
+                                    <span className="text-blue-400 text-xs">→</span>
+                                </div>
+                            </>
+                        )}
                     </div>
+
+                    {/* Top Recommendation - New Dynamic Section */}
+                    {insights?.topRecommendation && !loadingInsights && (
+                        <div className="glass-panel rounded-3xl p-6 border-l-4 border-purple-500">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">💡</div>
+                                <h4 className="font-bold text-white">AI Recommendation</h4>
+                            </div>
+                            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                                {insights.topRecommendation.action}
+                            </p>
+                            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mb-1">Impact</p>
+                                        <p className="text-xs text-purple-300 font-medium">{insights.topRecommendation.impact}</p>
+                                    </div>
+                                    <div className="w-px h-8 bg-purple-500/20"></div>
+                                    <div className="flex-1 text-right">
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mb-1">Timeframe</p>
+                                        <p className="text-xs text-purple-300 font-medium">{insights.topRecommendation.timeframe}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="glass-panel rounded-3xl p-6">
                         <h4 className="text-xs font-bold text-gray-400 uppercase mb-4">Connected Platforms</h4>

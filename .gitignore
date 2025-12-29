@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / Editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Build outputs
+/build/
+/dist/
+/.next/
+/out/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+
+# Misc
+.cache/
+tmp/
+temp/
+
+# Test files (optional - remove if needed)
+**/test-*.js
+**/debug-*.js
+**/check-*.js
+**/list-*.js
+**/qa-test-suite.js
+**/quick-test.js
+server-log.txt
